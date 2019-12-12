@@ -43,7 +43,7 @@ import javax.microedition.khronos.egl.EGLConfig;
  * buttons to invoke the trigger action.
  */
 
-public class HelloVrActivity extends GvrActivity implements GvrView.StereoRenderer {
+public class HelloVrActivity extends GvrActivity {
   private static final String TAG = "HelloVrActivity";
   private static final float pi = 3.1415927f;
   private static final float Z_NEAR = 0.01f;
@@ -197,7 +197,7 @@ public class HelloVrActivity extends GvrActivity implements GvrView.StereoRender
     GvrView gvrView = (GvrView) findViewById(R.id.gvr_view);
     gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
 
-    gvrView.setRenderer(this);
+    gvrView.setRenderer((GvrView.StereoRenderer)null);
     gvrView.setTransitionViewEnabled(true);
 
     // Enable Cardboard-trigger feedback with Daydream headsets. This is a simple way of supporting
@@ -223,194 +223,6 @@ public class HelloVrActivity extends GvrActivity implements GvrView.StereoRender
   public void onResume() {
     super.onResume();
   }
-
-  @Override
-  public void onRendererShutdown() {
-    Log.i(TAG, "onRendererShutdown");
-  }
-
-  @Override
-  public void onSurfaceChanged(int width, int height) {
-    Log.i(TAG, "onSurfaceChanged");
-  }
-
-  /**
-   * Creates the buffers we use to store information about the 3D world.
-   *
-   * <p>OpenGL doesn't use Java arrays, but rather needs data in a format it can understand.
-   * Hence we use ByteBuffers.
-   *
-   * @param config The EGL configuration used when creating the surface.
-   */
-  @Override
-  public void onSurfaceCreated(EGLConfig config) {
-    Log.i(TAG, "onSurfaceCreated");
-
-    GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    objectProgram = Util.compileProgram(OBJECT_VERTEX_SHADER_CODE, OBJECT_FRAGMENT_SHADER_CODE);
-    objectPositionParam = GLES20.glGetAttribLocation(objectProgram, "a_Position");
-    objectUvParam = GLES20.glGetAttribLocation(objectProgram, "a_UV");
-    objectModelViewProjectionParam = GLES20.glGetUniformLocation(objectProgram, "u_MVP");
-
-    Util.checkGlError("Object program params");
-    X=0;Y=0;Z=0;
-    resetTargetPosition();
-    moving=false;caught = false;
-    //build all of the blocks' transform matrices
-    int current_block = 0;
-    //build the walls according to the maze matrix
-    for (int i=0;i<MAZE_SIZE;i++) {
-          for (int j=0;j<MAZE_SIZE;j++) {
-              if (maze[i][j]==1) {
-                  Matrix.setIdentityM(modelBlock[current_block], 0);
-                  Matrix.translateM(modelBlock[current_block], 0,
-                          (i-(MAZE_SIZE>>1))*3,
-                          MAZE_Y,
-                          (j-(MAZE_SIZE>>1))*3);
-                  current_block++;
-              }
-          }
-      }
-    //build the floor
-    for (int i=0;i<MAZE_SIZE;i++) {
-      for (int j=0;j<MAZE_SIZE;j++) {
-        Matrix.setIdentityM(modelBlock[current_block], 0);
-        Matrix.translateM(modelBlock[current_block], 0,
-                (i-(MAZE_SIZE>>1))*3,
-                MAZE_Y - 3,
-                (j-(MAZE_SIZE>>1))*3);
-        current_block++;
-      }
-    }
-    //build the ceiling
-    for (int i=0;i<MAZE_SIZE;i++) {
-      for (int j=0;j<MAZE_SIZE;j++) {
-        Matrix.setIdentityM(modelBlock[current_block], 0);
-        Matrix.translateM(modelBlock[current_block], 0,
-                (i-(MAZE_SIZE>>1))*3,
-                MAZE_Y + 3,
-                (j-(MAZE_SIZE>>1))*3);
-        current_block++;
-      }
-    }
-    //place the target
-    Matrix.setIdentityM(modelTarget, 0);
-    Matrix.translateM(modelTarget, 0, target_x, 0, target_z);
-
-    Util.checkGlError("onSurfaceCreated");
-    //load all the objects ans textures
-    try {
-      for (int i = 0;i < block_cnt;i++) {
-        block[i] = new TexturedMesh(this, "big_cube.obj", objectPositionParam, objectUvParam);
-        if (i < wall_cnt) blockTex[i] = new Texture(this, "wall.png");
-        else if (i < (wall_cnt + block_cnt)>>1) blockTex[i] = new Texture(this, "bottom.png");
-        else blockTex[i] = new Texture(this, "top.png");
-      }
-      targetObjectMesh = new TexturedMesh(this, "TriSphere.obj", objectPositionParam, objectUvParam);
-      targetObjectSelectedTexture = new Texture(this, "TriSphere_Pink_BakedDiffuse.png");
-      targetObjectNotSelectedTexture = new Texture(this, "TriSphere_Blue_BakedDiffuse.png");
-    } catch (IOException e) {
-      Log.e(TAG, "Unable to initialize objects", e);
-    }
-    //start music playing
-    mp1.start();
-  }
-
-  /**
-   * Prepares OpenGL ES before we draw a frame.
-   *
-   * @param headTransform The head transformation in the new frame.
-   */
-  @Override
-  public void onNewFrame(HeadTransform headTransform) {
-    // Build the camera matrix and apply it to the ModelView.
-    Matrix.setLookAtM(camera, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f);
-    randomMoveTarget();
-    // Update the media players with HRTF files according to the most recent head rotation and distance.
-    headTransform.getEulerAngles(headRPY, 0);
-    //mapping:  X+ == Z-  Z+ == X-
-    sound_direction = angleToDirection(getAngleDiff());
-    //inverse-square law
-    sound_volume = Math.min(1, 1/getDistanceSquare());
-    //sound absorption of walls
-    sound_volume = sound_volume * (float)Math.pow(ABSORB, getBlockPoints());
-    //calculate the move in X and Z directions using yaw angle
-    //also prevent the player from touching the wall
-    if (moving) {
-      int blockidx = (int)(MAZE_SIZE*1.5+X)/3;
-      int blockidz = (int)(MAZE_SIZE*1.5+Z)/3;
-      float xinblock = X - (blockidx-(MAZE_SIZE>>1))*3;
-      float zinblock = Z - (blockidz-(MAZE_SIZE>>1))*3;
-      switch (dir) {
-          case 1:
-              x_inc = -(float) (MOVE_SPEED * Math.sin(headRPY[1]));
-              z_inc = -(float) (MOVE_SPEED * Math.cos(headRPY[1]));
-              break;
-          case 2:
-              x_inc = -(float) (MOVE_SPEED * Math.cos(headRPY[1]));
-              z_inc = (float) (MOVE_SPEED * Math.sin(headRPY[1]));
-              break;
-          case 3:
-              x_inc = (float) (MOVE_SPEED * Math.sin(headRPY[1]));
-              z_inc = (float) (MOVE_SPEED * Math.cos(headRPY[1]));
-              break;
-          case 4:
-              x_inc = (float) (MOVE_SPEED * Math.cos(headRPY[1]));
-              z_inc = -(float) (MOVE_SPEED * Math.sin(headRPY[1]));
-              break;
-          default:
-      }
-      //check the nearest 4 blocks respectively
-      //if player is close to a solid block, set speed of that direction to zero
-      if (xinblock > 1.5 - PLAYER_RADIUS && maze[blockidx+1][blockidz] == 1 && x_inc > 0) x_inc = 0;
-      else if (xinblock < -1.5 + PLAYER_RADIUS && maze[blockidx-1][blockidz] == 1 && x_inc < 0) x_inc = 0;
-      if (zinblock > 1.5 - PLAYER_RADIUS && maze[blockidx][blockidz+1] == 1 && z_inc > 0) z_inc = 0;
-      else if (zinblock < -1.5 + PLAYER_RADIUS && maze[blockidx][blockidz-1] == 1 && z_inc < 0) z_inc = 0;
-      X += x_inc;
-      Z += z_inc;
-    }
-    Util.checkGlError("onNewFrame");
-  }
-
-  /**
-   * Draws a frame for an eye.
-   *
-   * @param eye The eye to render. Includes all required transformations.
-   */
-  @Override
-  public void onDrawEye(Eye eye) {
-    GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-    // The clear color doesn't matter here because it's completely obscured by
-    // the room. However, the color buffer is still cleared because it may
-    // improve performance.
-    GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-
-    // Apply the eye transformation (translate ans rotate) to the camera.
-    Matrix.multiplyMM(view, 0, eye.getEyeView(), 0, camera, 0);
-    Matrix.translateM(view, 0, -X, -Y, -Z);
-
-    // Build the ModelView and ModelViewProjection matrices
-    // and display all the objects
-    float[] perspective = eye.getPerspective(Z_NEAR, Z_FAR);
-    for (int i = 0;i < block_cnt;i++) {
-      Matrix.multiplyMM(modelView, 0, view, 0, modelBlock[i], 0);
-      Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, modelView, 0);
-      GLES20.glUseProgram(objectProgram);
-      GLES20.glUniformMatrix4fv(objectModelViewProjectionParam, 1, false, modelViewProjection, 0);
-      blockTex[i].bind();
-      block[i].draw();
-    }
-    Matrix.multiplyMM(modelView, 0, view, 0, modelTarget, 0);
-    Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, modelView, 0);
-    GLES20.glUseProgram(objectProgram);
-    GLES20.glUniformMatrix4fv(objectModelViewProjectionParam, 1, false, modelViewProjection, 0);
-    if (canCatchTarget()) targetObjectSelectedTexture.bind();
-    else targetObjectNotSelectedTexture.bind();
-    targetObjectMesh.draw();
-  }
-
-  @Override
-  public void onFinishFrame(Viewport viewport) {}
 
   /**
    * Called when screen touched
