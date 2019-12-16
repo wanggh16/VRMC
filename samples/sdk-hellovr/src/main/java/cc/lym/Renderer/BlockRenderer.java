@@ -17,7 +17,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
@@ -240,7 +242,7 @@ public class BlockRenderer implements HeadlessRenderer {
 					if(((this.texture.getPixel(j,k)>>24)&0xff)!=0xff)
 						opaque[i]=false;
 			if(!opaque[i])
-				Log.v(LOG_TAG,"block "+i+" is transparent");
+				Log.i(LOG_TAG,"block "+i+" is transparent");
 		}
 		(this.daemon=new DaemonThread()).start();
 		PositionBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
@@ -446,7 +448,161 @@ public class BlockRenderer implements HeadlessRenderer {
 				}catch(InterruptedException ignored){}
 				try
 				{
-				
+					List<Integer>position=new ArrayList<>();
+					List<Integer>blockPosition=new ArrayList<>();
+					List<Float>uv=new ArrayList<>();
+					List<Float>illu=new ArrayList<>();
+					List<Integer>index=new ArrayList<>();
+					for(Map.Entry<FaceLocation,FaceAttr>_$item:exposedFaces.entrySet())
+					{
+						FaceLocation loc=_$item.getKey();
+						FaceAttr attr=_$item.getValue();
+						//points:
+						//4-3
+						//| |
+						//1-2
+						int x0,y0,z0,x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,faceoff=-1;
+						x0=x1=x2=x3=x4=(int)loc.x;
+						y0=y1=y2=y3=y4=(int)loc.y;
+						z0=z1=z2=z3=z4=(int)loc.z;
+						switch(loc.dir)
+						{
+							case UP:z1++;z2++;z3++;z4++;	x2++;x3++;y3++;y4++;faceoff=0;break;
+							case SOUTH:						x2++;x3++;z3++;z4++;faceoff=1;break;
+							case EAST:x1++;x2++;x3++;x4++;	y2++;y3++;z3++;z4++;faceoff=2;break;
+							case NORTH:y1++;y2++;y3++;y4++;	x1++;x4++;z4++;z3++;faceoff=3;break;
+							case WEST:						y1++;y4++;z4++;z3++;faceoff=4;break;
+							case DOWN:						x1++;x4++;y4++;y3++;faceoff=5;break;
+						}
+						float u1,v1,u2,v2,u3,v3,u4,v4;
+						u1=u4=faceoff/6.0f;u2=u3=(faceoff+1)/6.0f;
+						v1=v2=(blockIDLimit-attr.blockID-1)/(float)blockIDLimit;v3=v4=(blockIDLimit-attr.blockID)/(float)blockIDLimit;
+						float illuOut=(attr.illumination-illuMin)/(float)(illuMax-illuMin);
+						//triangle 1-2-3
+						position.add(x1);position.add(y1);position.add(z1);
+						position.add(x2);position.add(y2);position.add(z2);
+						position.add(x3);position.add(y3);position.add(z3);
+						blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+						blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+						blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+						uv.add(u1);uv.add(v1);
+						uv.add(u2);uv.add(v2);
+						uv.add(u3);uv.add(v3);
+						illu.add(illuOut);
+						illu.add(illuOut);
+						illu.add(illuOut);
+						index.add(index.size());
+						index.add(index.size());
+						index.add(index.size());
+						//triangle 1-3-4
+						position.add(x1);position.add(y1);position.add(z1);
+						position.add(x3);position.add(y3);position.add(z3);
+						position.add(x4);position.add(y4);position.add(z4);
+						blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+						blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+						blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+						uv.add(u1);uv.add(v1);
+						uv.add(u3);uv.add(v3);
+						uv.add(u4);uv.add(v4);
+						illu.add(illuOut);
+						illu.add(illuOut);
+						illu.add(illuOut);
+						index.add(index.size());
+						index.add(index.size());
+						index.add(index.size());
+						if(attr.dispInner)
+						{
+							float illuIn=(attr.innerIllumination-illuMin)/(float)(illuMax-illuMin);
+							//triangle 1-3-2
+							position.add(x1);position.add(y1);position.add(z1);
+							position.add(x3);position.add(y3);position.add(z3);
+							position.add(x2);position.add(y2);position.add(z2);
+							blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+							blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+							blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+							uv.add(u1);uv.add(v1);
+							uv.add(u3);uv.add(v3);
+							uv.add(u2);uv.add(v2);
+							illu.add(illuOut);
+							illu.add(illuOut);
+							illu.add(illuOut);
+							index.add(index.size());
+							index.add(index.size());
+							index.add(index.size());
+							//triangle 1-4-3
+							position.add(x1);position.add(y1);position.add(z1);
+							position.add(x4);position.add(y4);position.add(z4);
+							position.add(x3);position.add(y3);position.add(z3);
+							blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+							blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+							blockPosition.add(x0);blockPosition.add(y0);blockPosition.add(z0);
+							uv.add(u1);uv.add(v1);
+							uv.add(u4);uv.add(v4);
+							uv.add(u3);uv.add(v3);
+							illu.add(illuOut);
+							illu.add(illuOut);
+							illu.add(illuOut);
+							index.add(index.size());
+							index.add(index.size());
+							index.add(index.size());
+						}
+					}
+					
+					IntBuffer PositionBuffer=ByteBuffer.allocateDirect(4*position.size()).order(ByteOrder.nativeOrder()).asIntBuffer();
+					IntBuffer BlockPositionBuffer=ByteBuffer.allocateDirect(4*blockPosition.size()).order(ByteOrder.nativeOrder()).asIntBuffer();
+					FloatBuffer UVBuffer=ByteBuffer.allocateDirect(4*uv.size()).order(ByteOrder.nativeOrder()).asFloatBuffer();
+					FloatBuffer illuBuffer=ByteBuffer.allocateDirect(4*illu.size()).order(ByteOrder.nativeOrder()).asFloatBuffer();
+					IntBuffer indexBuffer=ByteBuffer.allocateDirect(4*index.size()).order(ByteOrder.nativeOrder()).asIntBuffer();
+					
+					int[]_position_=new int[position.size()];
+					for(int i=0;i<_position_.length;i++)
+						_position_[i]=position.get(i);
+					PositionBuffer.put(_position_);PositionBuffer.rewind();
+//					Log.w(LOG_TAG,"Position");
+//					for(int val:_position_)
+//						Log.w(LOG_TAG,""+val);
+					
+					int[]_blockPosition_=new int[blockPosition.size()];
+					for(int i=0;i<_blockPosition_.length;i++)
+						_blockPosition_[i]=blockPosition.get(i);
+					BlockPositionBuffer.put(_blockPosition_);BlockPositionBuffer.rewind();
+//					Log.w(LOG_TAG,"blockPosition");
+//					for(int val:_blockPosition_)
+//						Log.w(LOG_TAG,""+val);
+					
+					float[]_uv_=new float[uv.size()];
+					for(int i=0;i<_uv_.length;i++)
+						_uv_[i]=uv.get(i);
+					UVBuffer.put(_uv_);UVBuffer.rewind();
+//					Log.w(LOG_TAG,"uv");
+//					for(float val:_uv_)
+//						Log.w(LOG_TAG,""+val);
+					
+					float[]_illu_=new float[illu.size()];
+					for(int i=0;i<_illu_.length;i++)
+						_illu_[i]=illu.get(i);
+					illuBuffer.put(_illu_);illuBuffer.rewind();
+//					Log.w(LOG_TAG,"illu");
+//					for(float val:_illu_)
+//						Log.w(LOG_TAG,""+val);
+					
+					int[]_index_=new int[index.size()];
+					for(int i=0;i<_index_.length;i++)
+						_index_[i]=index.get(i);
+					indexBuffer.put(_index_);indexBuffer.rewind();
+//					Log.w(LOG_TAG,"index");
+//					for(int val:_index_)
+//						Log.w(LOG_TAG,""+val);
+					
+					synchronized(bufferLock)
+					{
+						BlockRenderer.this.PositionBuffer=PositionBuffer;
+						BlockRenderer.this.BlockPositionBuffer=BlockPositionBuffer;
+						BlockRenderer.this.UVBuffer=UVBuffer;
+						BlockRenderer.this.illuBuffer=illuBuffer;
+						BlockRenderer.this.indexBuffer=indexBuffer;
+					}
+					Log.i(LOG_TAG,"scene recreated");
 				}
 				catch(RuntimeException e){Log.e(LOG_TAG,"internal error: cannot rebuild render buffer",e);}
 			}
@@ -584,7 +740,7 @@ public class BlockRenderer implements HeadlessRenderer {
 	@Override
 	public void onSurfaceCreated(EGLConfig eglConfig)
 	{
-		Log.d(LOG_TAG,"onSurfaceCreated");
+		Log.i(LOG_TAG,"onSurfaceCreated");
 		int vs=Renderer.loadShader(GLES31.GL_VERTEX_SHADER,vertexShaderSourceCode);
 		int fs=Renderer.loadShader(GLES31.GL_FRAGMENT_SHADER,fragmentShaderSourceCode);
 		glProgram = GLES31.glCreateProgram();
