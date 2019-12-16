@@ -395,25 +395,25 @@ public class BlockRenderer implements HeadlessRenderer {
 									}
 									FaceLocation thisLoc=new FaceLocation(thisX,thisY,thisZ,thisDir);
 									FaceLocation neighbourLoc=new FaceLocation(neighbourX,neighbourY,neibhbourZ,neighborDir);
-									if(thisID==0||neighbourID!=0)
-									{
-										exposedFaces.remove(thisLoc);
-									}
-									else
+									if((thisID!=0&&neighbourID==0)||(opaque[thisID]&&!opaque[neighbourID]))
 									{
 										FaceAttr obj=exposedFaces.get(thisLoc);
 										if(obj!=null)obj.blockID=thisID;
 										else exposedFaces.put(thisLoc,new FaceAttr(neighbourIllu,thisID,!opaque[thisID],thisIllu));
 									}
-									if(neighbourID==0||thisID!=0)
-									{
-										exposedFaces.remove(neighbourLoc);
-									}
 									else
+									{
+										exposedFaces.remove(thisLoc);
+									}
+									if((neighbourID!=0&&thisID==0)||(opaque[neighbourID]&&!opaque[thisID]))
 									{
 										FaceAttr obj=exposedFaces.get(neighbourLoc);
 										if(obj!=null)obj.blockID=neighbourID;
 										else exposedFaces.put(neighbourLoc,new FaceAttr(thisIllu,neighbourID,!opaque[neighbourID],neighbourIllu));
+									}
+									else
+									{
+										exposedFaces.remove(neighbourLoc);
 									}
 								}
 							}
