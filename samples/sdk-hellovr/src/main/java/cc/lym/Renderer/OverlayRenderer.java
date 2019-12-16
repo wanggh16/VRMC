@@ -34,6 +34,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 	private int[]textureId=new int[1];
 	
 	private Bitmap texture;
+	private boolean changed;
 	
 	public OverlayRenderer(Bitmap content)
 	{
@@ -48,13 +49,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 	public void changeContent(Bitmap content)
 	{
 		texture=content.copy(content.getConfig(),false);
-		GLES31.glGenTextures(1,textureId,0);
-		GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
-		GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
-		Renderer.checkGlError();
-		GLUtils.texImage2D(GLES31.GL_TEXTURE_2D,0,texture,0);
-		GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
-		Renderer.checkGlError();
+		changed=true;
 	}
 	
 	private static final String vertexShaderSourceCode= "" +
@@ -96,6 +91,24 @@ public class OverlayRenderer implements HeadlessRenderer {
 		GLES31.glUseProgram(glProgram);
 		Renderer.checkGlError();
 		
+		if(changed)
+		{
+			changed=false;
+			Log.i(LOG_TAG,"change picture");
+			GLES31.glGenTextures(1,textureId,0);
+			GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+			GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
+			Renderer.checkGlError();
+			GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
+			GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
+			GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_MIN_FILTER,GLES31.GL_LINEAR_MIPMAP_NEAREST);
+			GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_MAG_FILTER,GLES31.GL_NEAREST);
+			Renderer.checkGlError();
+			GLUtils.texImage2D(GLES31.GL_TEXTURE_2D,0,texture,0);
+			GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
+			Renderer.checkGlError();
+		}
+		
 		GLES31.glEnableVertexAttribArray(glParam_a_Position);
 		GLES31.glEnableVertexAttribArray(glParam_a_UV);
 		Renderer.checkGlError();
@@ -134,6 +147,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 		glParam_a_Position=GLES31.glGetAttribLocation(glProgram,"a_Position");
 		glParam_a_UV=GLES31.glGetAttribLocation(glProgram,"a_UV");
 		Renderer.checkGlError();
+		changed=false;
 		GLES31.glGenTextures(1,textureId,0);
 		GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
 		GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
