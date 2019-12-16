@@ -395,7 +395,7 @@ public class BlockRenderer implements HeadlessRenderer {
 									}
 									FaceLocation thisLoc=new FaceLocation(thisX,thisY,thisZ,thisDir);
 									FaceLocation neighbourLoc=new FaceLocation(neighbourX,neighbourY,neibhbourZ,neighborDir);
-									if(thisID==0||opaque[neighbourID])
+									if(thisID==0||neighbourID!=0)
 									{
 										exposedFaces.remove(thisLoc);
 									}
@@ -405,7 +405,7 @@ public class BlockRenderer implements HeadlessRenderer {
 										if(obj!=null)obj.blockID=thisID;
 										else exposedFaces.put(thisLoc,new FaceAttr(neighbourIllu,thisID,!opaque[thisID],thisIllu));
 									}
-									if(neighbourID==0||opaque[thisID])
+									if(neighbourID==0||thisID!=0)
 									{
 										exposedFaces.remove(neighbourLoc);
 									}
@@ -476,7 +476,7 @@ public class BlockRenderer implements HeadlessRenderer {
 						}
 						float u1,v1,u2,v2,u3,v3,u4,v4;
 						u1=u4=faceoff/6.0f;u2=u3=(faceoff+1)/6.0f;
-						v1=v2=(blockIDLimit-attr.blockID-1)/(float)blockIDLimit;v3=v4=(blockIDLimit-attr.blockID)/(float)blockIDLimit;
+						v1=v2=(attr.blockID+1)/(float)blockIDLimit;v3=v4=(attr.blockID)/(float)blockIDLimit;
 						float illuOut=(attr.illumination-illuMin)/(float)(illuMax-illuMin);
 						//triangle 1-2-3
 						position.add(x1);position.add(y1);position.add(z1);
