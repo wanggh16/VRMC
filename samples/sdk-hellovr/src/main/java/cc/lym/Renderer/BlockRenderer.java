@@ -688,6 +688,7 @@ public class BlockRenderer implements HeadlessRenderer {
 		Location tmp=locationSupplier.get();
 		location=new Location(fold(tmp.x,xMin,xMax),fold(tmp.y,yMin,yMax),fold(tmp.z,zMin,zMax));//fold
 		upperBound[0]=(int)(location.x+sceneSize[0]/2);upperBound[1]=(int)(location.y+sceneSize[1]/2);upperBound[2]=(int)(location.z+sceneSize[2]/2);
+		lowerBound[0]=(int)(location.x-sceneSize[0]/2);lowerBound[1]=(int)(location.y-sceneSize[1]/2);lowerBound[2]=(int)(location.z-sceneSize[2]/2);
 		headTransform.getHeadView(headTrans,0);
 	}
 	@Override
