@@ -558,42 +558,27 @@ public class BlockRenderer implements HeadlessRenderer {
 					for(int i=0;i<_position_.length;i++)
 						_position_[i]=position.get(i);
 					PositionBuffer.put(_position_);PositionBuffer.rewind();
-//					Log.w(LOG_TAG,"Position");
-//					for(int val:_position_)
-//						Log.w(LOG_TAG,""+val);
-					
+
 					int[]_blockPosition_=new int[blockPosition.size()];
 					for(int i=0;i<_blockPosition_.length;i++)
 						_blockPosition_[i]=blockPosition.get(i);
 					BlockPositionBuffer.put(_blockPosition_);BlockPositionBuffer.rewind();
-//					Log.w(LOG_TAG,"blockPosition");
-//					for(int val:_blockPosition_)
-//						Log.w(LOG_TAG,""+val);
-					
+
 					float[]_uv_=new float[uv.size()];
 					for(int i=0;i<_uv_.length;i++)
 						_uv_[i]=uv.get(i);
 					UVBuffer.put(_uv_);UVBuffer.rewind();
-//					Log.w(LOG_TAG,"uv");
-//					for(float val:_uv_)
-//						Log.w(LOG_TAG,""+val);
-					
+
 					float[]_illu_=new float[illu.size()];
 					for(int i=0;i<_illu_.length;i++)
 						_illu_[i]=illu.get(i);
 					illuBuffer.put(_illu_);illuBuffer.rewind();
-//					Log.w(LOG_TAG,"illu");
-//					for(float val:_illu_)
-//						Log.w(LOG_TAG,""+val);
-					
+
 					int[]_index_=new int[index.size()];
 					for(int i=0;i<_index_.length;i++)
 						_index_[i]=index.get(i);
 					indexBuffer.put(_index_);indexBuffer.rewind();
-//					Log.w(LOG_TAG,"index");
-//					for(int val:_index_)
-//						Log.w(LOG_TAG,""+val);
-					
+
 					synchronized(bufferLock)
 					{
 						BlockRenderer.this.PositionBuffer=PositionBuffer;
