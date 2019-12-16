@@ -13,6 +13,8 @@ import com.google.vr.sdk.base.Eye;
 import com.google.vr.sdk.base.HeadTransform;
 import com.google.vr.sdk.base.Viewport;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.LinkedHashMap;
@@ -241,6 +243,11 @@ public class BlockRenderer implements HeadlessRenderer {
 				Log.v(LOG_TAG,"block "+i+" is transparent");
 		}
 		(this.daemon=new DaemonThread()).start();
+		PositionBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
+		BlockPositionBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
+		UVBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asFloatBuffer();
+		illuBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asFloatBuffer();
+		indexBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
 	}
 //	public BlockRenderer(long xMin, long xMax, long yMin, long yMax, long zMin, long zMax, int illuMin, int illuMax,
 //						 Supplier<Location>locationSupplier, byte[] texture, int[][][]blocks)
@@ -447,6 +454,8 @@ public class BlockRenderer implements HeadlessRenderer {
 	}
 	
 	private static final String vertexShaderSourceCode= "" +
+			Renderer.SHADER_VERSION_DIRECTIVE +
+			"" +
 			"precision highp int;" +
 			"precision highp float;" +
 			"" +
@@ -454,12 +463,12 @@ public class BlockRenderer implements HeadlessRenderer {
 			"uniform ivec3 u_UpperBound;" +
 			"uniform ivec3 u_LowerBound;" +
 			"uniform ivec3 u_SceneSize;" +
-			"attribute ivec3 a_Position;" +
-			"attribute ivec3 a_BlockPosition;" +
-			"attribute vec2 a_UV;" +
-			"varying vec2 v_UV;" +
-			"attribute float a_illu;" +
-			"varying float v_illu;" +
+			"in ivec3 a_Position;" +
+			"in ivec3 a_BlockPosition;" +
+			"in vec2 a_UV;" +
+			"out vec2 v_UV;" +
+			"in float a_illu;" +
+			"out float v_illu;" +
 			"" +
 			"void main()" +
 			"{" +
@@ -483,19 +492,22 @@ public class BlockRenderer implements HeadlessRenderer {
 			"}" +
 			"";
 	private static final String fragmentShaderSourceCode= "" +
+			Renderer.SHADER_VERSION_DIRECTIVE +
+			"" +
 			"precision highp int;" +
 			"precision highp float;" +
 			"precision highp sampler2D;" +
 			"" +
-			"varying vec2 v_UV;" +
-			"varying float v_illu;" +
+			"in vec2 v_UV;" +
+			"in float v_illu;" +
 			"uniform sampler2D u_Texture;" +
+			"out vec4 out_FragColor;" +
 			"" +
 			"void main()" +
 			"{" +
 			"	vec4 color=texture(u_Texture,vec2(v_UV.x,v_UV.y));" +
 			"	if(color.a<0.5)discard;" +
-			"	gl_FragColor=vec4(color.rgb*v_illu,1.0);" +
+			"	out_FragColor=vec4(color.rgb*v_illu,1.0);" +
 			"}" +
 			"";
 	private Location location=new Location(0,0,0);

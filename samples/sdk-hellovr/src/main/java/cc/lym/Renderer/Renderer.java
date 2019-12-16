@@ -19,6 +19,8 @@ import javax.microedition.khronos.egl.EGLConfig;
  * GvrView.StereoRenderer renderer = Renderer.base().andThen(new BlockRenderer(...)).andThen(new EntityRenderer(...));
  */
 public class Renderer implements GvrView.StereoRenderer {
+	final static String SHADER_VERSION_DIRECTIVE="#version 310 es\n";
+	
 	private final Consumer<HeadTransform> newFrame;
 	private final Consumer<Eye> drawEye;
 	private final Consumer<Viewport> finishFrame;
