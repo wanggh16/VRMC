@@ -2,14 +2,19 @@ package cc.lym.Renderer;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.opengl.GLES20;
+import android.opengl.GLES31;
+import android.opengl.GLUtils;
+import android.opengl.Matrix;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.vr.sdk.base.Eye;
-import com.google.vr.sdk.base.GvrView;
 import com.google.vr.sdk.base.HeadTransform;
 import com.google.vr.sdk.base.Viewport;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -76,12 +81,6 @@ public class BlockRenderer implements HeadlessRenderer {
 		Op(long x,long y,long z)
 		{
 			this.x=x;this.y=y;this.z=z;
-		}
-		static long fold(long val,long min,long max)
-		{
-			val=(val-min)%(max-min);
-			if(val<0)val+=(max-min);
-			return val+min;
 		}
 	}
 	private static class UpdateBlock extends Op
@@ -161,6 +160,18 @@ public class BlockRenderer implements HeadlessRenderer {
 			this.newIllumination=newIllumination;
 		}
 	}
+	private static long fold(long val,long min,long max)
+	{
+		val=(val-min)%(max-min);
+		if(val<0)val+=(max-min);
+		return val+min;
+	}
+	private static double fold(double val,long min,long max)
+	{
+		val=(val-(double)min)%(max-min);
+		if(val<0)val+=(max-min);
+		return val+min;
+	}
 	
 	/**
 	 * An object that holds the player's viewpoint location.
@@ -198,6 +209,7 @@ public class BlockRenderer implements HeadlessRenderer {
 						 Supplier<Location>locationSupplier, byte[] texture)
 	{
 		this.xMin=xMin;this.xMax=xMax;this.yMin=yMin;this.yMax=yMax;this.zMin=zMin;this.zMax=zMax;
+		this.sceneSize[0]=(int)(xMax-xMin);this.sceneSize[1]=(int)(yMax-yMin);this.sceneSize[2]=(int)(zMax-zMin);
 		this.illuMin=illuMin;this.illuMax=illuMax;
 		if(xMin>xMax||yMin>yMax||zMin>zMax||illuMin>illuMax)
 		{
@@ -280,7 +292,7 @@ public class BlockRenderer implements HeadlessRenderer {
 				Log.e(LOG_TAG,"illegal surrounding block ID "+newBlockID);
 				throw new IllegalArgumentException("illegal surrounding block ID "+newBlockID);
 			}
-		pendingOperations.add(new UpdateBlock(Op.fold(x,xMin,xMax),Op.fold(y,yMin,yMax),Op.fold(z,zMin,zMax),newBlockID,surroundingBlocks,illumination,illuMin,illuMax));
+		pendingOperations.add(new UpdateBlock(fold(x,xMin,xMax),fold(y,yMin,yMax),fold(z,zMin,zMax),newBlockID,surroundingBlocks,illumination,illuMin,illuMax));
 		pendingOperationCount.release();
 	}
 	/**
@@ -301,9 +313,16 @@ public class BlockRenderer implements HeadlessRenderer {
 			Log.w(LOG_TAG,"illegal illumination "+newIllumination);
 			newIllumination=Math.max(illuMin,Math.min(illuMax,newIllumination));
 		}
-		pendingOperations.add(new UpdateIllumination(Op.fold(x,xMin,xMax),Op.fold(y,yMin,yMax),Op.fold(z,zMin,zMax),newIllumination));
+		pendingOperations.add(new UpdateIllumination(fold(x,xMin,xMax),fold(y,yMin,yMax),fold(z,zMin,zMax),newIllumination));
 		pendingOperationCount.release();
 	}
+	
+	private IntBuffer PositionBuffer;
+	private IntBuffer BlockPositionBuffer;
+	private FloatBuffer UVBuffer;
+	private FloatBuffer illuBuffer;
+	private IntBuffer indexBuffer;
+	private final Object bufferLock=new Object();
 	
 	class DaemonThread extends Thread
 	{
@@ -427,24 +446,170 @@ public class BlockRenderer implements HeadlessRenderer {
 		}
 	}
 	
+	private static final String vertexShaderSourceCode= "" +
+			"precision highp int;" +
+			"precision highp float;" +
+			"" +
+			"uniform mat4 u_transform;" +
+			"uniform ivec3 u_UpperBound;" +
+			"uniform ivec3 u_LowerBound;" +
+			"uniform ivec3 u_SceneSize;" +
+			"attribute ivec3 a_Position;" +
+			"attribute ivec3 a_BlockPosition;" +
+			"attribute vec2 a_UV;" +
+			"varying vec2 v_UV;" +
+			"attribute float a_illu;" +
+			"varying float v_illu;" +
+			"" +
+			"void main()" +
+			"{" +
+			"	ivec3 Position;" +
+			"" +
+			"	if(a_BlockPosition.x>u_UpperBound.x)Position.x=a_Position.x-u_SceneSize.x;" +
+			"	else if(a_BlockPosition.x<u_LowerBound.x)Position.x=a_Position.x+u_SceneSize.x;" +
+			"	else Position.x=a_Position.x;" +
+			"" +
+			"	if(a_BlockPosition.y>u_UpperBound.y)Position.y=a_Position.y-u_SceneSize.y;" +
+			"	else if(a_BlockPosition.y<u_LowerBound.y)Position.y=a_Position.y+u_SceneSize.y;" +
+			"	else Position.y=a_Position.y;" +
+			"" +
+			"	if(a_BlockPosition.z>u_UpperBound.z)Position.z=a_Position.z-u_SceneSize.z;" +
+			"	else if(a_BlockPosition.z<u_LowerBound.z)Position.z=a_Position.z+u_SceneSize.z;" +
+			"	else Position.z=a_Position.z;" +
+			"" +
+			"	gl_Position=u_transform*vec4(Position,1.0);" +
+			"	v_UV=a_UV;" +
+			"	v_illu=a_illu;" +
+			"}" +
+			"";
+	private static final String fragmentShaderSourceCode= "" +
+			"precision highp int;" +
+			"precision highp float;" +
+			"precision highp sampler2D;" +
+			"" +
+			"varying vec2 v_UV;" +
+			"varying float v_illu;" +
+			"uniform sampler2D u_Texture;" +
+			"" +
+			"void main()" +
+			"{" +
+			"	vec4 color=texture(u_Texture,vec2(v_UV.x,v_UV.y));" +
+			"	if(color.a<0.5)discard;" +
+			"	gl_FragColor=vec4(color.rgb*v_illu,1.0);" +
+			"}" +
+			"";
 	private Location location=new Location(0,0,0);
-	private float[]headTrans=new float[16];
+	private final float[]headTrans=new float[16];
+	private final int[]upperBound=new int[3];
+	private final int[]lowerBound=new int[3];
+	private final int[]sceneSize=new int[3];
+	private int glProgram;
+	private int glParam_u_transform;//mat4
+	private int glParam_u_UpperBound;//ivec3
+	private int glParam_u_LowerBound;//ivec3
+	private int glParam_u_SceneSize;//ivec3
+	private int glParam_a_Position;//ivec3
+	private int glParam_a_BlockPosition;//ivec3
+	private int glParam_a_UV;//vec2
+	private int glParam_a_illu;//float
+	private int[]textureId=new int[1];
 	
 	@Override
 	public void onNewFrame(HeadTransform headTransform)
 	{
-		location=locationSupplier.get();
+		Location tmp=locationSupplier.get();
+		location=new Location(fold(tmp.x,xMin,xMax),fold(tmp.y,yMin,yMax),fold(tmp.z,zMin,zMax));//fold
+		upperBound[0]=(int)(location.x+sceneSize[0]/2);upperBound[1]=(int)(location.y+sceneSize[1]/2);upperBound[2]=(int)(location.z+sceneSize[2]/2);
 		headTransform.getHeadView(headTrans,0);
 	}
 	@Override
 	public void onDrawEye(Eye eye)
 	{
-	
+		GLES31.glUseProgram(glProgram);
+		Renderer.checkGlError();
+		
+		float[]head2eye=new float[16];
+		Matrix.multiplyMM(head2eye,0,eye.getEyeView(),0,new float[]{0,0,-1,0,-1,0,0,0,0,1,0,0,(float)location.y,-(float)location.z,(float)location.x,1},0);
+		float[]perspective=new float[16];
+		Matrix.multiplyMM(perspective,0,eye.getPerspective(0.05f,250.0f),0,head2eye,0);
+		
+		GLES31.glUniformMatrix4fv(glParam_u_transform,1,false,perspective,0);
+		GLES31.glUniform3iv(glParam_u_UpperBound,1,upperBound,0);
+		GLES31.glUniform3iv(glParam_u_LowerBound,1,lowerBound,0);
+		GLES31.glUniform3iv(glParam_u_SceneSize,1,sceneSize,0);
+		Renderer.checkGlError();
+		GLES31.glEnableVertexAttribArray(glParam_a_Position);
+		GLES31.glEnableVertexAttribArray(glParam_a_BlockPosition);
+		GLES31.glEnableVertexAttribArray(glParam_a_UV);
+		GLES31.glEnableVertexAttribArray(glParam_a_illu);
+		Renderer.checkGlError();
+		
+		IntBuffer PositionBuffer;
+		IntBuffer BlockPositionBuffer;
+		FloatBuffer UVBuffer;
+		FloatBuffer illuBuffer;
+		IntBuffer indexBuffer;
+		synchronized(bufferLock)
+		{
+			PositionBuffer=this.PositionBuffer;
+			BlockPositionBuffer=this.BlockPositionBuffer;
+			UVBuffer=this.UVBuffer;
+			illuBuffer=this.illuBuffer;
+			indexBuffer=this.indexBuffer;
+		}
+		
+		GLES31.glVertexAttribIPointer(glParam_a_Position,3, GLES20.GL_INT,0,PositionBuffer);
+		GLES31.glVertexAttribIPointer(glParam_a_BlockPosition,3, GLES20.GL_INT,0,BlockPositionBuffer);
+		GLES31.glVertexAttribPointer(glParam_a_UV,2, GLES20.GL_FLOAT,false,0,UVBuffer);
+		GLES31.glVertexAttribPointer(glParam_a_illu,1, GLES20.GL_FLOAT,false,0,illuBuffer);
+		Renderer.checkGlError();
+		GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+		GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
+		Renderer.checkGlError();
+		GLES31.glDrawElements(GLES20.GL_TRIANGLES,indexBuffer.limit(),GLES31.GL_UNSIGNED_INT,indexBuffer);
+		Renderer.checkGlError();
 	}
 	@Override
 	public void onSurfaceCreated(EGLConfig eglConfig)
 	{
-	
+		Log.d(LOG_TAG,"onSurfaceCreated");
+		int vs=Renderer.loadShader(GLES31.GL_VERTEX_SHADER,vertexShaderSourceCode);
+		int fs=Renderer.loadShader(GLES31.GL_FRAGMENT_SHADER,fragmentShaderSourceCode);
+		glProgram = GLES31.glCreateProgram();
+		GLES31.glAttachShader(glProgram,vs);
+		Renderer.checkGlError();
+		GLES31.glAttachShader(glProgram,fs);
+		Renderer.checkGlError();
+		GLES31.glLinkProgram(glProgram);
+		int[] linkStatus = new int[1];
+		GLES31.glGetProgramiv(glProgram, GLES31.GL_LINK_STATUS, linkStatus, 0);
+		if(linkStatus[0]!=GLES31.GL_TRUE)
+		{
+			Log.e("opengl","link error: "+GLES31.glGetProgramInfoLog(glProgram));
+			throw new RuntimeException(GLES31.glGetProgramInfoLog(glProgram));
+		}
+		Renderer.checkGlError();
+		glParam_u_transform=GLES31.glGetUniformLocation(glProgram,"u_transform");
+		glParam_u_UpperBound=GLES31.glGetUniformLocation(glProgram,"u_UpperBound");
+		glParam_u_LowerBound=GLES31.glGetUniformLocation(glProgram,"u_LowerBound");
+		glParam_u_SceneSize=GLES31.glGetUniformLocation(glProgram,"u_SceneSize");
+		glParam_a_Position=GLES31.glGetAttribLocation(glProgram,"a_Position");
+		glParam_a_BlockPosition=GLES31.glGetAttribLocation(glProgram,"a_BlockPosition");
+		glParam_a_UV=GLES31.glGetAttribLocation(glProgram,"a_UV");
+		glParam_a_illu=GLES31.glGetAttribLocation(glProgram,"a_illu");
+		Renderer.checkGlError();
+		GLES31.glGenTextures(1,textureId,0);
+		GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
+		GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
+		Renderer.checkGlError();
+		GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_WRAP_S,GLES31.GL_CLAMP_TO_EDGE);
+		GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_WRAP_T,GLES31.GL_CLAMP_TO_EDGE);
+		GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_MIN_FILTER,GLES31.GL_LINEAR_MIPMAP_NEAREST);
+		GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D,GLES31.GL_TEXTURE_MAG_FILTER,GLES31.GL_NEAREST);
+		Renderer.checkGlError();
+		GLUtils.texImage2D(GLES31.GL_TEXTURE_2D,0,texture,0);
+		GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
+		Renderer.checkGlError();
 	}
 	@Override public void onFinishFrame(Viewport viewport) {}
 	@Override public void onSurfaceChanged(int i, int i1) {}
