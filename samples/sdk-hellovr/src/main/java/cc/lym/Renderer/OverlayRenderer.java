@@ -20,6 +20,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 
 /**
  * Renderer that renders the overlay
+ * the image will be displayed over the whole viewport, pixel with alpha<0.5 will be considered totally transparent, others considered totally non-transparent
  */
 public class OverlayRenderer implements HeadlessRenderer {
 	private final static String LOG_TAG="OverlayRenderer";
