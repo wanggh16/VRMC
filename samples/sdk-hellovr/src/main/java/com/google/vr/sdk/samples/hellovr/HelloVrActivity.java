@@ -16,22 +16,23 @@
 
 package com.google.vr.sdk.samples.hellovr;
 
-import android.opengl.GLES20;
-import android.opengl.Matrix;
+import android.content.res.AssetFileDescriptor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;                //detect screen press and release
 import android.view.KeyEvent;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import com.google.vr.sdk.base.AndroidCompat;
-import com.google.vr.sdk.base.Eye;
 import com.google.vr.sdk.base.GvrActivity;
 import com.google.vr.sdk.base.GvrView;
-import com.google.vr.sdk.base.HeadTransform;
-import com.google.vr.sdk.base.Viewport;
+
 import java.io.IOException;
-import javax.microedition.khronos.egl.EGLConfig;
+
+import cc.lym.Renderer.BlockRenderer;
+import cc.lym.Renderer.HeadTransformProvider;
+import cc.lym.Renderer.OverlayRenderer;
+import cc.lym.Renderer.Renderer;
 
 /**
  * A Google VR sample application.
@@ -44,172 +45,209 @@ import javax.microedition.khronos.egl.EGLConfig;
  */
 
 public class HelloVrActivity extends GvrActivity {
-  private static final String TAG = "HelloVrActivity";
-  private static final float pi = 3.1415927f;
-  private static final float Z_NEAR = 0.01f;
-  private static final float Z_FAR = 60.0f;   //maximum visibility
+    private static final String TAG = "HelloVrActivity";
+    private static final int MAZE_SIZE = 9;          //size of maze(odd only)
 
-  private static final int MAZE_SIZE = 9;          //size of maze(odd only)
-  private static final int MAZE_Y = 0;              //for debug
-  private static final float MOVE_SPEED = 0.06f;    //distance per frame
-  private static final float TARGET_SPEED = 0.03f;
-  private static final float DISTANCE_LIMIT = 1;    //distance to catch target
-  private static final float PLAYER_RADIUS = 0.4f;  //collision case
-  private static final float TARGET_RADIUS = 0.2f;
-  private static final float ABSORB = 0.9f;
+    private char[][][] maze = {
+//        {
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,1,1,1,1,1,1,1,1}
+//        },
+//        {
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,1,0,1,1,1,0,1},
+//                {1,0,1,0,0,0,0,0,1},
+//                {1,0,1,0,0,0,1,0,1},
+//                {1,0,0,0,0,0,1,0,1},
+//                {1,0,1,1,1,0,1,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,1,1,1,1,1,1,1,1}
+//        },
+        {
+                {1,1,1,1,1,1,1,1,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,1,1,1,1,1,1,1,1}
+        }
+    };
+    private int block_cnt;  //count of all blocks including floor and ceiling
+    private int wall_cnt;   //count of wall blocks
 
-  private float[] modelTarget;
-  private float[][] modelBlock; //transform matrices of all blocks
-  private char[][] maze = {
-          {1,1,1,1,1,1,1,1,1},
-          {1,0,0,0,0,0,0,0,1},
-          {1,0,1,0,1,1,1,0,1},
-          {1,0,1,0,0,0,0,0,1},
-          {1,0,1,0,0,0,1,0,1},
-          {1,0,0,0,0,0,1,0,1},
-          {1,0,1,1,1,0,1,0,1},
-          {1,0,0,0,0,0,0,0,1},
-          {1,1,1,1,1,1,1,1,1}
-  };
-  private int block_cnt;  //count of all blocks including floor and ceiling
-  private int wall_cnt;   //count of wall blocks
+    private Player player;        //玩家
+    private float[] headRPY;
 
-//  private float X;    //location of camera(player)
-//  private float Y;
-//  private float Z;
-  private Player player;        //玩家
-  private float target_x = 0;  //location of target
-  private float target_z = 0;
-  private float targetMoveAngle = pi/4; //direction of target speed
-  private int targetDirX = 1;
-  private int targetDirZ = 1;
-  private float[] headRPY;
+    BlockRenderer blockRenderer;
+    HeadTransformProvider headTransformProvider;
+    OverlayRenderer overlayRenderer;
+    Bitmap overlay;
 
-  private boolean moving; //true when screen pressed continuously
-  private boolean caught; //true when player catch the target
-  private int dir = 1;
-  private float x_inc,z_inc;
 
-  /**
-   * Sets the view to our GvrView and initializes the transformation matrices we will use
-   * to render our scene.
-   */
-  @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+    /**
+     * Sets the view to our GvrView and initializes the transformation matrices we will use
+     * to render our scene.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        Thread.setDefaultUncaughtExceptionHandler((t,e) -> Log.e("uncaught exception","",e));
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.common_ui);
 
-    initializeGvrView();
-    
-    headRPY = new float[3];
-    modelTarget = new float[16];
-    wall_cnt = 0;
-    for (int i=0;i<MAZE_SIZE;i++) {
-        for (int j=0;j<MAZE_SIZE;j++) {
-            if (maze[i][j]==1) wall_cnt+=1;
+        GvrView gvrView = findViewById(R.id.gvr_view);
+        gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
+
+        byte[]texture=null;
+        try{
+            AssetFileDescriptor tex=getAssets().openFd("wall.png");
+            int length=(int)tex.getLength();
+            texture=new byte[length];
+            int res=tex.createInputStream().read(texture);
+            if(res!=length)
+                Log.w("texture loader",String.format("%d bytes expected, %d read",length,res));
+        }catch(IOException e){throw new RuntimeException("IOException",e);}
+        try{
+            GvrView.StereoRenderer renderer= Renderer.base()
+                    .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new BlockRenderer.Location(player.center_pos[0],player.center_pos[1],player.center_pos[2]),texture))
+                    .andThen(headTransformProvider=new HeadTransformProvider())
+                    .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png"))));
+            gvrView.setRenderer(renderer);
+        }catch(IOException ignored){}
+        gvrView.setTransitionViewEnabled(true);
+        if (gvrView.setAsyncReprojectionEnabled(true))
+        {
+            Log.w("init","Sustained performance mode");
+            AndroidCompat.setSustainedPerformanceMode(this, true);
+        }
+        setGvrView(gvrView);
+        new SceneModifier().start();
+
+        headRPY = new float[3];
+        player=new Player(1,1,1,new float[]{5,5,5}, headRPY);
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    /**
+     * Called when screen touched
+     */
+    @Override
+    public void onCardboardTrigger() {
+        Log.i(TAG, "onCardboardTrigger");
+        player.set_move_toward(Player.Direction.FORWARD);
+    }
+
+    /**
+     * Called when there's a screen action
+     * Mainly to detect trigger release and stop moving
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()){
+            case MotionEvent.ACTION_UP:
+                Log.i(TAG, "UP");
+                player.stop_move_toward(Player.Direction.FORWARD);
+                break;
+            default:
+                Log.i(TAG, "DN");
+                player.set_move_toward(Player.Direction.FORWARD);
+                player.jump();
+        }
+        return true;
+    }
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        switch (keyCode){
+            case KeyEvent.KEYCODE_W:
+                player.set_move_toward(Player.Direction.FORWARD);
+                break;
+            case KeyEvent.KEYCODE_A:
+                player.set_move_toward(Player.Direction.LEFTWARD);
+                break;
+            case KeyEvent.KEYCODE_S:
+                player.set_move_toward(Player.Direction.BACKWARD);
+                break;
+            case KeyEvent.KEYCODE_D:
+                player.set_move_toward(Player.Direction.RIGHTWARD);
+                break;
+            default:
+        }
+        return true;
+    }
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        switch (keyCode){
+            case KeyEvent.KEYCODE_W:
+                player.stop_move_toward(Player.Direction.FORWARD);
+                break;
+            case KeyEvent.KEYCODE_A:
+                player.stop_move_toward(Player.Direction.LEFTWARD);
+                break;
+            case KeyEvent.KEYCODE_S:
+                player.stop_move_toward(Player.Direction.BACKWARD);
+                break;
+            case KeyEvent.KEYCODE_D:
+                player.stop_move_toward(Player.Direction.RIGHTWARD);
+                break;
+            default:
+        }
+        return true;
+    }
+
+
+
+
+
+    class SceneModifier extends Thread
+    {
+        void sleep_(long millis)
+        {
+            try{sleep(millis);}catch(InterruptedException ignored){}
+        }
+        @Override public void run()
+        {
+            sleep_(1000);
+//            blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,0,0,0,0},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+            for(int i=0;i<maze.length;i++){
+                for(int j=0;j<maze[0].length;j++){
+                    for(int k=0;k<maze[0][0].length;k++) {
+                        blockRenderer.updateBlock(i, j, k, (maze[i][j][k] == 1) ? 2 : 0, new int[]{0, 0, 0, 0, 0, 0}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+                    }
+                }
+            }
+            //			blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(0,0,10,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(0,-10,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(0,10,0,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(-10,0,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(10,0,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+            int mark=0;
+//            while(true)
+//            {
+//                sleep_(5000);
+//                blockRenderer.updateBlock(0,0,-10,(mark++)%3,new int[]{0,0,0,0,0,0},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//
+//            }
         }
     }
-    block_cnt = wall_cnt + 2*MAZE_SIZE*MAZE_SIZE;
-    modelBlock = new float[block_cnt][16];
-
-
-  }
-
-  public void initializeGvrView() {
-    setContentView(R.layout.common_ui);
-
-    GvrView gvrView = (GvrView) findViewById(R.id.gvr_view);
-    gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
-
-    gvrView.setRenderer((GvrView.StereoRenderer)null);
-    gvrView.setTransitionViewEnabled(true);
-
-    // Enable Cardboard-trigger feedback with Daydream headsets. This is a simple way of supporting
-    // Daydream controller input for basic interactions using the existing Cardboard trigger API.
-    gvrView.enableCardboardTriggerEmulation();
-
-    if (gvrView.setAsyncReprojectionEnabled(true)) {
-      // Async reprojection decouples the app framerate from the display framerate,
-      // allowing immersive interaction even at the throttled clockrates set by
-      // sustained performance mode.
-      AndroidCompat.setSustainedPerformanceMode(this, true);
-    }
-
-    setGvrView(gvrView);
-  }
-
-  @Override
-  public void onPause() {
-    super.onPause();
-  }
-
-  @Override
-  public void onResume() {
-    super.onResume();
-  }
-
-  /**
-   * Called when screen touched
-   */
-  @Override
-  public void onCardboardTrigger() {
-    Log.i(TAG, "onCardboardTrigger");
-      player.set_move_toward(Player.Direction.FORWARD);
-  }
-
-  /**
-   * Called when there's a screen action
-   * Mainly to detect trigger release and stop moving
-   */
-  @Override
-  public boolean onTouchEvent(MotionEvent event) {
-      switch (event.getAction()){
-          case MotionEvent.ACTION_UP:
-              Log.i(TAG, "UP");
-              player.stop_move_toward(Player.Direction.FORWARD);
-              break;
-          default:
-              Log.i(TAG, "DN");
-              player.set_move_toward(Player.Direction.FORWARD);
-              player.jump();
-      }
-      return true;
-  }
-  @Override
-  public boolean onKeyDown(int keyCode, KeyEvent event) {
-      switch (keyCode){
-          case KeyEvent.KEYCODE_W:
-              player.set_move_toward(Player.Direction.FORWARD);
-              break;
-          case KeyEvent.KEYCODE_A:
-              player.set_move_toward(Player.Direction.LEFTWARD);
-              break;
-          case KeyEvent.KEYCODE_S:
-              player.set_move_toward(Player.Direction.BACKWARD);
-              break;
-          case KeyEvent.KEYCODE_D:
-              player.set_move_toward(Player.Direction.RIGHTWARD);
-              break;
-          default:
-      }
-      return true;
-  }
-  @Override
-  public boolean onKeyUp(int keyCode, KeyEvent event) {
-      switch (keyCode){
-          case KeyEvent.KEYCODE_W:
-              player.stop_move_toward(Player.Direction.FORWARD);
-              break;
-          case KeyEvent.KEYCODE_A:
-              player.stop_move_toward(Player.Direction.LEFTWARD);
-              break;
-          case KeyEvent.KEYCODE_S:
-              player.stop_move_toward(Player.Direction.BACKWARD);
-              break;
-          case KeyEvent.KEYCODE_D:
-              player.stop_move_toward(Player.Direction.RIGHTWARD);
-              break;
-          default:
-      }
-      return true;
-  }
 }

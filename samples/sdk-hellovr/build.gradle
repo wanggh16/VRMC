@@ -32,6 +32,10 @@ android {
         }
 
     }
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
 }
 
 dependencies {
@@ -41,4 +45,5 @@ dependencies {
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
     implementation 'de.javagl:obj:0.2.1'
+    implementation 'com.android.support:support-annotations:28.0.0'
 }
