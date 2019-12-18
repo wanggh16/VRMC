@@ -58,48 +58,6 @@ public class HelloVrActivity extends GvrActivity {
   private static final float TARGET_RADIUS = 0.2f;
   private static final float ABSORB = 0.9f;
 
-  private static final String[] OBJECT_VERTEX_SHADER_CODE =
-      new String[] {
-        "uniform mat4 u_MVP;",
-        "attribute vec4 a_Position;",
-        "attribute vec2 a_UV;",
-        "varying vec2 v_UV;",
-        "",
-        "void main() {",
-        "  v_UV = a_UV;",
-        "  gl_Position = u_MVP * a_Position;",
-        "}",
-      };
-  private static final String[] OBJECT_FRAGMENT_SHADER_CODE =
-      new String[] {
-        "precision mediump float;",
-        "varying vec2 v_UV;",
-        "uniform sampler2D u_Texture;",
-        "",
-        "void main() {",
-        "  // The y coordinate of this sample's textures is reversed compared to",
-        "  // what OpenGL expects, so we invert the y coordinate.",
-        "  gl_FragColor = texture2D(u_Texture, vec2(v_UV.x, 1.0 - v_UV.y));",
-        "}",
-      };
-
-  private int objectProgram;
-
-  private int objectPositionParam;
-  private int objectUvParam;
-  private int objectModelViewProjectionParam;
-
-  private TexturedMesh[] block; //object and textures of all blocks
-  private Texture[] blockTex;
-  private TexturedMesh targetObjectMesh;
-  private Texture targetObjectNotSelectedTexture;
-  private Texture targetObjectSelectedTexture;
-
-  private float[] camera;
-  private float[] view;
-  private float[] modelViewProjection;
-  private float[] modelView;
-
   private float[] modelTarget;
   private float[][] modelBlock; //transform matrices of all blocks
   private char[][] maze = {
@@ -116,9 +74,10 @@ public class HelloVrActivity extends GvrActivity {
   private int block_cnt;  //count of all blocks including floor and ceiling
   private int wall_cnt;   //count of wall blocks
 
-  private float X;    //location of camera(player)
-  private float Y;
-  private float Z;
+//  private float X;    //location of camera(player)
+//  private float Y;
+//  private float Z;
+  private Player player;        //玩家
   private float target_x = 0;  //location of target
   private float target_z = 0;
   private float targetMoveAngle = pi/4; //direction of target speed
@@ -131,14 +90,6 @@ public class HelloVrActivity extends GvrActivity {
   private int dir = 1;
   private float x_inc,z_inc;
 
-  private MediaPlayer mp1, mp2; //play in turn to avoid delay
-  private int sound_direction = 0; //50 horizontal points of CIPIC HRTF database
-  private float sound_volume = 1;
-  private int[] sound_files = {R.raw.seg1, R.raw.seg2, R.raw.seg3, R.raw.seg4, R.raw.seg5, R.raw.seg6, R.raw.seg7, R.raw.seg8, R.raw.seg9, R.raw.seg10,
-          R.raw.seg11, R.raw.seg12, R.raw.seg13, R.raw.seg14, R.raw.seg15, R.raw.seg16, R.raw.seg17, R.raw.seg18, R.raw.seg19, R.raw.seg20,
-          R.raw.seg21, R.raw.seg22, R.raw.seg23, R.raw.seg24, R.raw.seg25, R.raw.seg26, R.raw.seg27, R.raw.seg28, R.raw.seg29, R.raw.seg30,
-          R.raw.seg31, R.raw.seg32, R.raw.seg33, R.raw.seg34, R.raw.seg35, R.raw.seg36, R.raw.seg37, R.raw.seg38, R.raw.seg39, R.raw.seg40,
-          R.raw.seg41, R.raw.seg42, R.raw.seg43, R.raw.seg44, R.raw.seg45, R.raw.seg46, R.raw.seg47, R.raw.seg48, R.raw.seg49, R.raw.seg50};
   /**
    * Sets the view to our GvrView and initializes the transformation matrices we will use
    * to render our scene.
@@ -148,11 +99,7 @@ public class HelloVrActivity extends GvrActivity {
     super.onCreate(savedInstanceState);
 
     initializeGvrView();
-
-    camera = new float[16];
-    view = new float[16];
-    modelViewProjection = new float[16];
-    modelView = new float[16];
+    
     headRPY = new float[3];
     modelTarget = new float[16];
     wall_cnt = 0;
@@ -163,32 +110,8 @@ public class HelloVrActivity extends GvrActivity {
     }
     block_cnt = wall_cnt + 2*MAZE_SIZE*MAZE_SIZE;
     modelBlock = new float[block_cnt][16];
-    block = new TexturedMesh[block_cnt];
-    blockTex = new Texture[block_cnt];
 
-    //init media players here
-    mp1 = MediaPlayer.create(HelloVrActivity.this, R.raw.seg1);
-    mp2 = MediaPlayer.create(HelloVrActivity.this, R.raw.seg1);
-    mp1.setNextMediaPlayer(mp2);
 
-    mp1.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-        // Override onCompletion method to apply desired operations.
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer){
-            // Whatever you want to do when the audio playback is done...
-            Log.i(TAG,"mp1");
-            mp1_init();
-        }
-    } );
-    mp2.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-        // Override onCompletion method to apply desired operations.
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer) {
-            // Whatever you want to do when the audio playback is done...
-            Log.i(TAG, "mp2");
-            mp2_init();
-        }
-    } );
   }
 
   public void initializeGvrView() {
@@ -230,11 +153,7 @@ public class HelloVrActivity extends GvrActivity {
   @Override
   public void onCardboardTrigger() {
     Log.i(TAG, "onCardboardTrigger");
-    moving = true;
-    if (canCatchTarget()) {
-      caught = true;
-      resetTargetPosition();
-    }
+      player.set_move_toward(Player.Direction.FORWARD);
   }
 
   /**
@@ -246,11 +165,12 @@ public class HelloVrActivity extends GvrActivity {
       switch (event.getAction()){
           case MotionEvent.ACTION_UP:
               Log.i(TAG, "UP");
-              moving = false;
+              player.stop_move_toward(Player.Direction.FORWARD);
               break;
           default:
               Log.i(TAG, "DN");
-              moving = true;
+              player.set_move_toward(Player.Direction.FORWARD);
+              player.jump();
       }
       return true;
   }
@@ -258,20 +178,16 @@ public class HelloVrActivity extends GvrActivity {
   public boolean onKeyDown(int keyCode, KeyEvent event) {
       switch (keyCode){
           case KeyEvent.KEYCODE_W:
-              moving = true;
-              dir = 1;
+              player.set_move_toward(Player.Direction.FORWARD);
               break;
           case KeyEvent.KEYCODE_A:
-              moving = true;
-              dir = 2;
+              player.set_move_toward(Player.Direction.LEFTWARD);
               break;
           case KeyEvent.KEYCODE_S:
-              moving = true;
-              dir = 3;
+              player.set_move_toward(Player.Direction.BACKWARD);
               break;
           case KeyEvent.KEYCODE_D:
-              moving = true;
-              dir = 4;
+              player.set_move_toward(Player.Direction.RIGHTWARD);
               break;
           default:
       }
@@ -281,185 +197,19 @@ public class HelloVrActivity extends GvrActivity {
   public boolean onKeyUp(int keyCode, KeyEvent event) {
       switch (keyCode){
           case KeyEvent.KEYCODE_W:
-              moving = false;
+              player.stop_move_toward(Player.Direction.FORWARD);
               break;
           case KeyEvent.KEYCODE_A:
-              moving = false;
+              player.stop_move_toward(Player.Direction.LEFTWARD);
               break;
           case KeyEvent.KEYCODE_S:
-              moving = false;
+              player.stop_move_toward(Player.Direction.BACKWARD);
               break;
           case KeyEvent.KEYCODE_D:
-              moving = false;
+              player.stop_move_toward(Player.Direction.RIGHTWARD);
               break;
           default:
       }
       return true;
-  }
-
-  private float getDistanceSquare() {
-    return (target_x - X)*(target_x - X) + (target_z - Z)*(target_z - Z);
-  }
-  //target's head related direction
-  private float getAngleDiff() {
-      return (float)Math.atan2(X - target_x, Z - target_z) - headRPY[1];
-  }
-
-  //calculate how much the sound is blocked by obstacles
-  //about 10% volume off per 0.2m
-  private int getBlockPoints() {
-      int blocked_points = 0;
-      int total_points = (int)(5*Math.sqrt(getDistanceSquare()));
-      for (int current_point = 1;current_point < total_points;current_point++) {
-          float point_x = (current_point*X + (total_points - current_point)*target_x)/total_points;
-          float point_z = (current_point*Z + (total_points - current_point)*target_z)/total_points;
-          if (maze[(int)(MAZE_SIZE*1.5+point_x)/3][(int)(MAZE_SIZE*1.5+point_z)/3] == 1) blocked_points++;
-      }
-      return blocked_points;
-  }
-  //can catch only with close distance and right direction
-  private boolean canCatchTarget() {
-      return getDistanceSquare() < DISTANCE_LIMIT*DISTANCE_LIMIT && Math.abs(getAngleDiff()) < 0.5;
-  }
-  //random set target position and avoid obstacles
-  private void resetTargetPosition() {
-      do {
-          target_x = (float)(2 * (MAZE_SIZE + 1) * Math.random() - MAZE_SIZE - 1);
-          target_z = (float)(2 * (MAZE_SIZE + 1) * Math.random() - MAZE_SIZE - 1);
-      } while (maze[(int)(MAZE_SIZE*1.5+target_x)/3][(int)(MAZE_SIZE*1.5+target_z)/3] == 1);
-      Matrix.setIdentityM(modelTarget, 0);
-      Matrix.translateM(modelTarget, 0, target_x, 0, target_z);
-  }
-  //target moves every frame
-  private void randomMoveTarget() {
-      int blockidx = (int)(MAZE_SIZE*1.5+target_x)/3;
-      int blockidz = (int)(MAZE_SIZE*1.5+target_z)/3;
-      float xinblock = target_x - (blockidx-(MAZE_SIZE>>1))*3;
-      float zinblock = target_z - (blockidz-(MAZE_SIZE>>1))*3;
-      //change direction randomly
-      targetMoveAngle += 0.1*(Math.random() - 0.5);
-      float x_inc = (float)(targetDirX*TARGET_SPEED*Math.sin(targetMoveAngle));
-      float z_inc = (float)(targetDirZ*TARGET_SPEED*Math.cos(targetMoveAngle));
-      //bounce off walls
-      if (xinblock > 1.5 - TARGET_RADIUS && maze[blockidx+1][blockidz] == 1 && x_inc > 0) {x_inc = 0; targetDirX = - targetDirX;}
-      else if (xinblock < -1.5 + TARGET_RADIUS && maze[blockidx-1][blockidz] == 1 && x_inc < 0) {x_inc = 0; targetDirX = - targetDirX;}
-      if (zinblock > 1.5 - TARGET_RADIUS && maze[blockidx][blockidz+1] == 1 && z_inc > 0) {z_inc = 0; targetDirZ = - targetDirZ;}
-      else if (zinblock < -1.5 + TARGET_RADIUS && maze[blockidx][blockidz-1] == 1 && z_inc < 0) {z_inc = 0; targetDirZ = - targetDirZ;}
-      target_x += x_inc;
-      target_z += z_inc;
-      Matrix.setIdentityM(modelTarget, 0);
-      Matrix.translateM(modelTarget, 0, target_x, 0, target_z);
-  }
-  //init media players in a new thread
-  private void mp1_init() {
-    new Thread(new Runnable() {@Override public void run() {
-      mp1.reset();
-      Uri uri;
-      if (!caught) {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + sound_files[sound_direction]);
-          mp1.setVolume(sound_volume, sound_volume);
-      }
-      else {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + R.raw.caught);
-          caught = false;
-          mp1.setVolume(1.0f, 1.0f);
-      }
-      try {
-        mp1.setDataSource(HelloVrActivity.this, uri);
-        mp1.prepare();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      mp2.setNextMediaPlayer(mp1);
-    }}).start();
-  }
-
-  private void mp2_init() {
-    new Thread(new Runnable() {@Override public void run() {
-      mp2.reset();
-      Uri uri;
-      if (!caught) {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + sound_files[sound_direction]);
-          mp2.setVolume(sound_volume, sound_volume);
-      }
-      else {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + R.raw.caught);
-          caught = false;
-          mp2.setVolume(1.0f, 1.0f);
-      }
-      try {
-        mp2.setDataSource(HelloVrActivity.this, uri);
-        mp2.prepare();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      mp1.setNextMediaPlayer(mp2);
-    }}).start();
-  }
-  //choose HRTF files according to target's relative direction
-  private int angleToDirection(float angle) {
-      angle = angle * 180 / pi;
-      if (angle > 180) angle -= 360;
-      else if (angle <= -180) angle += 360;
-      if (90 < angle && angle <= 180) {
-          if (177.5 < angle) return 37;
-          else if (172.5 < angle && angle <= 177.5) return 38;
-          else if (167.5 < angle && angle <= 172.5) return 39;
-          else if (162.5 < angle && angle <= 167.5) return 40;
-          else if (157.5 < angle && angle <= 162.5) return 41;
-          else if (152.5 < angle && angle <= 157.5) return 42;
-          else if (147.5 < angle && angle <= 152.5) return 43;
-          else if (142.5 < angle && angle <= 147.5) return 44;
-          else if (137.5 < angle && angle <= 142.5) return 45;
-          else if (130 < angle && angle <= 137.5) return 46;
-          else if (120 < angle && angle <= 130) return 47;
-          else if (107.5 < angle && angle <= 120) return 48;
-          else return 49;
-      }
-      else if (0 < angle && angle <= 90) {
-          if (72.5 < angle) return 0;
-          else if (60 < angle && angle <= 72.5) return 1;
-          else if (50 < angle && angle <= 60) return 2;
-          else if (42.5 < angle && angle <= 50) return 3;
-          else if (37.5 < angle && angle <= 42.5) return 4;
-          else if (32.5 < angle && angle <= 37.5) return 5;
-          else if (27.5 < angle && angle <= 32.5) return 6;
-          else if (22.5 < angle && angle <= 27.5) return 7;
-          else if (17.5 < angle && angle <= 22.5) return 8;
-          else if (12.5 < angle && angle <= 17.5) return 9;
-          else if (7.5 < angle && angle <= 12.5) return 10;
-          else if (2.5 < angle && angle <= 7.5) return 11;
-          else return 12;
-      }
-      else if (-90 < angle && angle <= 0) {
-          if (-2.5 < angle) return 12;
-          else if (-7.5 < angle && angle <= -2.5) return 13;
-          else if (-12.5 < angle && angle <= -7.5) return 14;
-          else if (-17.5 < angle && angle <= -12.5) return 15;
-          else if (-22.5 < angle && angle <= -17.5) return 16;
-          else if (-27.5 < angle && angle <= -22.5) return 17;
-          else if (-32.5 < angle && angle <= -27.5) return 18;
-          else if (-37.5 < angle && angle <= -32.5) return 19;
-          else if (-42.5 < angle && angle <= -37.5) return 20;
-          else if (-50 < angle && angle <= -42.5) return 21;
-          else if (-60 < angle && angle <= -50) return 22;
-          else if (-72.5 < angle && angle <= -60) return 23;
-          else return 24;
-      }
-      else {
-          if (-107.5 < angle) return 25;
-          else if (-120 < angle && angle <= -107.5) return 26;
-          else if (-130 < angle && angle <= -120) return 27;
-          else if (-137.5 < angle && angle <= -130) return 28;
-          else if (-142.5 < angle && angle <= -137.5) return 29;
-          else if (-147.5 < angle && angle <= -142.5) return 30;
-          else if (-152.5 < angle && angle <= -147.5) return 31;
-          else if (-157.5 < angle && angle <= -152.5) return 32;
-          else if (-162.5 < angle && angle <= -157.5) return 33;
-          else if (-167.5 < angle && angle <= -162.5) return 34;
-          else if (-172.5 < angle && angle <= -167.5) return 35;
-          else if (-177.5 < angle && angle <= -172.5) return 36;
-          else return 37;
-      }
   }
 }
