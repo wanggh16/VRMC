@@ -46,9 +46,18 @@ import cc.lym.Renderer.Renderer;
 
 public class HelloVrActivity extends GvrActivity {
     private static final String TAG = "HelloVrActivity";
-    private static final int MAZE_SIZE = 9;          //size of maze(odd only)
+    private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
 
     private char[][][] maze = {
+            {
+                {1,1,1},
+                {1,1,1},
+                {1,1,1}
+        },{
+            {1,1,0},
+            {1,0,0},
+            {1,0,0}
+    }
 //        {
 //                {1,1,1,1,1,1,1,1,1},
 //                {1,1,1,1,1,1,1,1,1},
@@ -71,20 +80,18 @@ public class HelloVrActivity extends GvrActivity {
 //                {1,0,0,0,0,0,0,0,1},
 //                {1,1,1,1,1,1,1,1,1}
 //        },
-        {
-                {1,1,1,1,1,1,1,1,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,1,1,1,1,1,1,1,1}
-        }
+//        {
+//                {1,1,1,1,1,1,1,1,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,0,0,0,0,0,0,0,1},
+//                {1,1,1,1,1,1,1,1,1}
+//        }
     };
-    private int block_cnt;  //count of all blocks including floor and ceiling
-    private int wall_cnt;   //count of wall blocks
 
     private Player player;        //玩家
     private float[] headRPY;
@@ -134,7 +141,7 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         headRPY = new float[3];
-        player=new Player(1,1,1,new float[]{5,5,5}, headRPY);
+        player=new Player(0.5,0.5,0.5,new float[]{-2,-2,5}, headTransformProvider, maze);
 
     }
 
@@ -146,15 +153,6 @@ public class HelloVrActivity extends GvrActivity {
     @Override
     public void onResume() {
         super.onResume();
-    }
-
-    /**
-     * Called when screen touched
-     */
-    @Override
-    public void onCardboardTrigger() {
-        Log.i(TAG, "onCardboardTrigger");
-        player.set_move_toward(Player.Direction.FORWARD);
     }
 
     /**
@@ -171,7 +169,6 @@ public class HelloVrActivity extends GvrActivity {
             default:
                 Log.i(TAG, "DN");
                 player.set_move_toward(Player.Direction.FORWARD);
-                player.jump();
         }
         return true;
     }
@@ -179,7 +176,8 @@ public class HelloVrActivity extends GvrActivity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode){
             case KeyEvent.KEYCODE_W:
-                player.set_move_toward(Player.Direction.FORWARD);
+                player.jump();
+                //player.set_move_toward(Player.Direction.FORWARD);
                 break;
             case KeyEvent.KEYCODE_A:
                 player.set_move_toward(Player.Direction.LEFTWARD);
@@ -227,14 +225,23 @@ public class HelloVrActivity extends GvrActivity {
         @Override public void run()
         {
             sleep_(1000);
-//            blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,0,0,0,0},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
-            for(int i=0;i<maze.length;i++){
-                for(int j=0;j<maze[0].length;j++){
-                    for(int k=0;k<maze[0][0].length;k++) {
-                        blockRenderer.updateBlock(i, j, k, (maze[i][j][k] == 1) ? 2 : 0, new int[]{0, 0, 0, 0, 0, 0}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+            for(int i=0;i<maze.length;i++){     //上下
+                for(int j=0;j<maze[0].length;j++){  //南北
+                    for(int k=0;k<maze[0][0].length;k++) {  //东西
+                        int up =(i+1>=maze.length)?0:maze[i+1][j][k];
+                        int down =(i-1<0)?0:maze[i-1][j][k];
+                        int north =(j-1<0)?0:maze[i][j-1][k];
+                        int south =(j+1>=maze[0].length)?0:maze[i][j+1][k];
+                        int west =(k-1<0)?0:maze[i][j][k-1];
+                        int east =(k+1>=maze[0][0].length)?0:maze[i][j][k+1];
+                        if(i==1&&j==1&&k==0){
+                            k=0;
+                        }
+                        blockRenderer.updateBlock(maze[0].length/2-j, maze[0][0].length/2-k, i, maze[i][j][k], new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
                     }
                 }
             }
+
             //			blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
 //			blockRenderer.updateBlock(0,0,10,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
 //			blockRenderer.updateBlock(0,-10,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
@@ -248,6 +255,12 @@ public class HelloVrActivity extends GvrActivity {
 //                blockRenderer.updateBlock(0,0,-10,(mark++)%3,new int[]{0,0,0,0,0,0},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
 //
 //            }
+            while(true){
+                //Log.i("hhh1", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
+                sleep_(25);
+                //player.update_pos();
+                //Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
+            }
         }
     }
 }
