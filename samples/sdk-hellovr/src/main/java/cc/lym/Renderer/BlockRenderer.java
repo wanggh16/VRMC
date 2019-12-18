@@ -48,6 +48,7 @@ import javax.microedition.khronos.egl.EGLConfig;
  */
 public class BlockRenderer implements HeadlessRenderer {
 	private final static String LOG_TAG="BlockRenderer";
+	private final static boolean DEBUG=true;
 	
 	private enum Direction{UP,SOUTH,EAST,NORTH,WEST,DOWN}
 	private static class FaceLocation
@@ -234,16 +235,21 @@ public class BlockRenderer implements HeadlessRenderer {
 		this.texture=Bitmap.createBitmap(full,0,0,blockTextureSize*6,blockIDLimit*blockTextureSize);
 		opaque=new boolean[blockIDLimit];
 		opaque[0]=false;
+		boolean allOpaque=true;
 		for(int i=1;i<blockIDLimit;i++)//id=0 -> air
 		{
 			opaque[i]=true;
 			for(int j=0;j<blockTextureSize*6;j++)
 				for(int k=blockTextureSize*i;k<blockTextureSize*(i+1);k++)
 					if(((this.texture.getPixel(j,k)>>24)&0xff)!=0xff)
-						opaque[i]=false;
+						allOpaque=opaque[i]=false;
 			if(!opaque[i])
 				Log.i(LOG_TAG,"block "+i+" is transparent");
 		}
+		if(allOpaque)
+			Log.i(LOG_TAG,"all opaque");
+		else
+			Log.i(LOG_TAG,"not all opaque");
 		(this.daemon=new DaemonThread()).start();
 		PositionBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
 		BlockPositionBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
@@ -303,6 +309,20 @@ public class BlockRenderer implements HeadlessRenderer {
 			}
 		pendingOperations.add(new UpdateBlock(fold(x,xMin,xMax),fold(y,yMin,yMax),fold(z,zMin,zMax),newBlockID,surroundingBlocks,illumination,illuMin,illuMax));
 		pendingOperationCount.release();
+		if(DEBUG)
+		{
+			StringBuilder neighbourBuilder=new StringBuilder();
+			neighbourBuilder.append("[");
+			for(int i=0;i<6;i++)
+				neighbourBuilder.append(surroundingBlocks[i]).append(i==5?"]":",");
+			StringBuilder illuBuilder=new StringBuilder();
+			illuBuilder.append("[");
+			for(int i=0;i<3;i++)
+				for(int j=0;j<3;j++)
+					for(int k=0;k<3;k++)
+						illuBuilder.append(illumination[i][j][k]).append((i==2&&j==2&&k==2)?"]":",");
+			Log.i(LOG_TAG,String.format("updblock %d %d %d %d "+neighbourBuilder+illuBuilder,x,y,z,newBlockID));
+		}
 	}
 	/**
 	 * Update the illumination level at a position
@@ -324,6 +344,7 @@ public class BlockRenderer implements HeadlessRenderer {
 		}
 		pendingOperations.add(new UpdateIllumination(fold(x,xMin,xMax),fold(y,yMin,yMax),fold(z,zMin,zMax),newIllumination));
 		pendingOperationCount.release();
+		if(DEBUG)Log.i(LOG_TAG,String.format("updillum %d %d %d %d",x,y,z,newIllumination));
 	}
 	
 	private IntBuffer PositionBuffer;
