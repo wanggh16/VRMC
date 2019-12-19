@@ -2,8 +2,8 @@ package com.google.vr.sdk.samples.hellovr;
 
 public class Animal extends Entity {
 
-    public Animal(double box_x_half, double box_y_half, double box_z_half, float[] center_pos, char[][][] scene) {
-        super(box_x_half, box_y_half, box_z_half, center_pos, scene);
+    public Animal(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up ,float[] center_pos, char[][][] scene) {
+        super(box_x_half, box_y_half, box_z_half_down, box_z_half_up ,center_pos, scene);
     }
 
     @Override

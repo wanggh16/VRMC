@@ -10,13 +10,13 @@ public class Player extends Entity{
     private float[] headRPY;
     private HeadTransformProvider head;
     private boolean[] move; //记录移动方向的数组，长为4，每一位分别代表向前后左右移动
-    private float MOVE_SPEED=0.02f;
+    private float MOVE_SPEED=0.04f;
     public enum Direction{
         FORWARD,BACKWARD,LEFTWARD,RIGHTWARD
     }
 
-    public Player(double box_x_half, double box_y_half, double box_z_half, float[] center_pos, HeadTransformProvider head, char[][][] scene) {
-        super(box_x_half, box_y_half, box_z_half, center_pos, scene);
+    public Player(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up, float[] center_pos, HeadTransformProvider head, char[][][] scene) {
+        super(box_x_half, box_y_half, box_z_half_down, box_z_half_up, center_pos, scene);
         this.move=new boolean[]{false,false,false,false};
         this.head=head;
         this.headRPY=new float[3];
@@ -25,7 +25,7 @@ public class Player extends Entity{
     @Override
     public void set_next_action() {
         head.getForwardVector(headRPY,0);
-        Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
+        //Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
         if(move[0]){
             speed[0] = -MOVE_SPEED * headRPY[2];
             speed[1] = -MOVE_SPEED * headRPY[0];
@@ -49,10 +49,10 @@ public class Player extends Entity{
             case FORWARD:
                 move[0]=true;
                 break;
-            case BACKWARD:
+            case LEFTWARD:
                 move[1]=true;
                 break;
-            case LEFTWARD:
+            case BACKWARD:
                 move[2]=true;
                 break;
             case RIGHTWARD:
@@ -66,10 +66,10 @@ public class Player extends Entity{
             case FORWARD:
                 move[0]=false;
                 break;
-            case BACKWARD:
+            case LEFTWARD:
                 move[1]=false;
                 break;
-            case LEFTWARD:
+            case BACKWARD:
                 move[2]=false;
                 break;
             case RIGHTWARD:
@@ -80,6 +80,6 @@ public class Player extends Entity{
 
     public void jump(){
         if(collide_z()==-1)
-            speed[2]+=0.2;
+            speed[2]+=0.15;
     }
 }
