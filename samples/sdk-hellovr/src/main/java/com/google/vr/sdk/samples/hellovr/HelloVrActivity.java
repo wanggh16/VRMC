@@ -16,22 +16,23 @@
 
 package com.google.vr.sdk.samples.hellovr;
 
-import android.opengl.GLES20;
-import android.opengl.Matrix;
+import android.content.res.AssetFileDescriptor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;                //detect screen press and release
 import android.view.KeyEvent;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import com.google.vr.sdk.base.AndroidCompat;
-import com.google.vr.sdk.base.Eye;
 import com.google.vr.sdk.base.GvrActivity;
 import com.google.vr.sdk.base.GvrView;
-import com.google.vr.sdk.base.HeadTransform;
-import com.google.vr.sdk.base.Viewport;
+
 import java.io.IOException;
-import javax.microedition.khronos.egl.EGLConfig;
+
+import cc.lym.Renderer.BlockRenderer;
+import cc.lym.Renderer.HeadTransformProvider;
+import cc.lym.Renderer.OverlayRenderer;
+import cc.lym.Renderer.Renderer;
 
 /**
  * A Google VR sample application.
@@ -44,422 +45,316 @@ import javax.microedition.khronos.egl.EGLConfig;
  */
 
 public class HelloVrActivity extends GvrActivity {
-  private static final String TAG = "HelloVrActivity";
-  private static final float pi = 3.1415927f;
-  private static final float Z_NEAR = 0.01f;
-  private static final float Z_FAR = 60.0f;   //maximum visibility
+    private static final String TAG = "HelloVrActivity";
+    private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
 
-  private static final int MAZE_SIZE = 9;          //size of maze(odd only)
-  private static final int MAZE_Y = 0;              //for debug
-  private static final float MOVE_SPEED = 0.06f;    //distance per frame
-  private static final float TARGET_SPEED = 0.03f;
-  private static final float DISTANCE_LIMIT = 1;    //distance to catch target
-  private static final float PLAYER_RADIUS = 0.4f;  //collision case
-  private static final float TARGET_RADIUS = 0.2f;
-  private static final float ABSORB = 0.9f;
+    private char[][][] maze = {
+        {   //0层
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+        },
+        {   //1层
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+        },
+        {   //2层
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+        },
+        {   //3层
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+        },
+        {   //4层
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,1,0,0,0,0,0,1,1,1,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,1,1,1,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+        },
+        {   //5层(空气层)
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 
-  private static final String[] OBJECT_VERTEX_SHADER_CODE =
-      new String[] {
-        "uniform mat4 u_MVP;",
-        "attribute vec4 a_Position;",
-        "attribute vec2 a_UV;",
-        "varying vec2 v_UV;",
-        "",
-        "void main() {",
-        "  v_UV = a_UV;",
-        "  gl_Position = u_MVP * a_Position;",
-        "}",
-      };
-  private static final String[] OBJECT_FRAGMENT_SHADER_CODE =
-      new String[] {
-        "precision mediump float;",
-        "varying vec2 v_UV;",
-        "uniform sampler2D u_Texture;",
-        "",
-        "void main() {",
-        "  // The y coordinate of this sample's textures is reversed compared to",
-        "  // what OpenGL expects, so we invert the y coordinate.",
-        "  gl_FragColor = texture2D(u_Texture, vec2(v_UV.x, 1.0 - v_UV.y));",
-        "}",
-      };
+        },
+        {   //6层(空气层)(去掉这两层的话人在最顶端可能出bug)
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 
-  private int objectProgram;
+        },
+    };
 
-  private int objectPositionParam;
-  private int objectUvParam;
-  private int objectModelViewProjectionParam;
+    private Player player;        //玩家
+    private float[] headRPY;
 
-  private TexturedMesh[] block; //object and textures of all blocks
-  private Texture[] blockTex;
-  private TexturedMesh targetObjectMesh;
-  private Texture targetObjectNotSelectedTexture;
-  private Texture targetObjectSelectedTexture;
+    BlockRenderer blockRenderer;
+    HeadTransformProvider headTransformProvider;
+    OverlayRenderer overlayRenderer;
+    Bitmap overlay;
 
-  private float[] camera;
-  private float[] view;
-  private float[] modelViewProjection;
-  private float[] modelView;
 
-  private float[] modelTarget;
-  private float[][] modelBlock; //transform matrices of all blocks
-  private char[][] maze = {
-          {1,1,1,1,1,1,1,1,1},
-          {1,0,0,0,0,0,0,0,1},
-          {1,0,1,0,1,1,1,0,1},
-          {1,0,1,0,0,0,0,0,1},
-          {1,0,1,0,0,0,1,0,1},
-          {1,0,0,0,0,0,1,0,1},
-          {1,0,1,1,1,0,1,0,1},
-          {1,0,0,0,0,0,0,0,1},
-          {1,1,1,1,1,1,1,1,1}
-  };
-  private int block_cnt;  //count of all blocks including floor and ceiling
-  private int wall_cnt;   //count of wall blocks
+    /**
+     * Sets the view to our GvrView and initializes the transformation matrices we will use
+     * to render our scene.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        Thread.setDefaultUncaughtExceptionHandler((t,e) -> Log.e("uncaught exception","",e));
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.common_ui);
 
-  private float X;    //location of camera(player)
-  private float Y;
-  private float Z;
-  private float target_x = 0;  //location of target
-  private float target_z = 0;
-  private float targetMoveAngle = pi/4; //direction of target speed
-  private int targetDirX = 1;
-  private int targetDirZ = 1;
-  private float[] headRPY;
+        GvrView gvrView = findViewById(R.id.gvr_view);
+        gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
 
-  private boolean moving; //true when screen pressed continuously
-  private boolean caught; //true when player catch the target
-  private int dir = 1;
-  private float x_inc,z_inc;
+        byte[]texture=null;
+        try{
+            AssetFileDescriptor tex=getAssets().openFd("wall.png");
+            int length=(int)tex.getLength();
+            texture=new byte[length];
+            int res=tex.createInputStream().read(texture);
+            if(res!=length)
+                Log.w("texture loader",String.format("%d bytes expected, %d read",length,res));
+        }catch(IOException e){throw new RuntimeException("IOException",e);}
+        try{
+            GvrView.StereoRenderer renderer= Renderer.base()
+                    .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new BlockRenderer.Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
+                    .andThen(headTransformProvider=new HeadTransformProvider())
+                    .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png"))));
+            gvrView.setRenderer(renderer);
+        }catch(IOException ignored){}
+        gvrView.setTransitionViewEnabled(true);
+        if (gvrView.setAsyncReprojectionEnabled(true))
+        {
+            Log.w("init","Sustained performance mode");
+            AndroidCompat.setSustainedPerformanceMode(this, true);
+        }
+        setGvrView(gvrView);
+        new SceneModifier().start();
 
-  private MediaPlayer mp1, mp2; //play in turn to avoid delay
-  private int sound_direction = 0; //50 horizontal points of CIPIC HRTF database
-  private float sound_volume = 1;
-  private int[] sound_files = {R.raw.seg1, R.raw.seg2, R.raw.seg3, R.raw.seg4, R.raw.seg5, R.raw.seg6, R.raw.seg7, R.raw.seg8, R.raw.seg9, R.raw.seg10,
-          R.raw.seg11, R.raw.seg12, R.raw.seg13, R.raw.seg14, R.raw.seg15, R.raw.seg16, R.raw.seg17, R.raw.seg18, R.raw.seg19, R.raw.seg20,
-          R.raw.seg21, R.raw.seg22, R.raw.seg23, R.raw.seg24, R.raw.seg25, R.raw.seg26, R.raw.seg27, R.raw.seg28, R.raw.seg29, R.raw.seg30,
-          R.raw.seg31, R.raw.seg32, R.raw.seg33, R.raw.seg34, R.raw.seg35, R.raw.seg36, R.raw.seg37, R.raw.seg38, R.raw.seg39, R.raw.seg40,
-          R.raw.seg41, R.raw.seg42, R.raw.seg43, R.raw.seg44, R.raw.seg45, R.raw.seg46, R.raw.seg47, R.raw.seg48, R.raw.seg49, R.raw.seg50};
-  /**
-   * Sets the view to our GvrView and initializes the transformation matrices we will use
-   * to render our scene.
-   */
-  @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+        headRPY = new float[3];
+        player=new Player(0.25f,0.25f,0.9f, 0.3f,new float[]{4,4,5}, headTransformProvider, maze);
 
-    initializeGvrView();
+    }
 
-    camera = new float[16];
-    view = new float[16];
-    modelViewProjection = new float[16];
-    modelView = new float[16];
-    headRPY = new float[3];
-    modelTarget = new float[16];
-    wall_cnt = 0;
-    for (int i=0;i<MAZE_SIZE;i++) {
-        for (int j=0;j<MAZE_SIZE;j++) {
-            if (maze[i][j]==1) wall_cnt+=1;
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    /**
+     * Called when there's a screen action
+     * Mainly to detect trigger release and stop moving
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()){
+            case MotionEvent.ACTION_UP:
+                Log.i(TAG, "UP");
+                player.jump();
+                player.stop_move_toward(Player.Direction.FORWARD);
+                break;
+            default:
+                Log.i(TAG, "DN");
+                player.set_move_toward(Player.Direction.FORWARD);
+        }
+        return true;
+    }
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        Log.i("keycode", String.valueOf(keyCode));
+        switch (keyCode){
+            case KeyEvent.KEYCODE_X:
+                player.jump();
+                break;
+            case KeyEvent.KEYCODE_W:
+                player.set_move_toward(Player.Direction.FORWARD);
+                break;
+            case KeyEvent.KEYCODE_A:
+                player.set_move_toward(Player.Direction.LEFTWARD);
+                break;
+            case KeyEvent.KEYCODE_S:
+                player.set_move_toward(Player.Direction.BACKWARD);
+                break;
+            case KeyEvent.KEYCODE_D:
+                player.set_move_toward(Player.Direction.RIGHTWARD);
+                break;
+            default:
+        }
+        return true;
+    }
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        switch (keyCode){
+            case KeyEvent.KEYCODE_W:
+                player.stop_move_toward(Player.Direction.FORWARD);
+                break;
+            case KeyEvent.KEYCODE_A:
+                player.stop_move_toward(Player.Direction.LEFTWARD);
+                break;
+            case KeyEvent.KEYCODE_S:
+                player.stop_move_toward(Player.Direction.BACKWARD);
+                break;
+            case KeyEvent.KEYCODE_D:
+                player.stop_move_toward(Player.Direction.RIGHTWARD);
+                break;
+            default:
+        }
+        return true;
+    }
+
+
+
+
+
+    class SceneModifier extends Thread
+    {
+        void sleep_(long millis)
+        {
+            try{sleep(millis);}catch(InterruptedException ignored){}
+        }
+        @Override public void run()
+        {
+            sleep_(1000);
+            for(int i=0;i<maze.length;i++){     //上下
+                for(int j=0;j<maze[0].length;j++){  //南北
+                    for(int k=0;k<maze[0][0].length;k++) {  //东西
+                        int up =(i+1>=maze.length)?0:maze[i+1][j][k];
+                        int down =(i-1<0)?0:maze[i-1][j][k];
+                        int east =(j-1<0)?0:maze[i][j-1][k];
+                        int west =(j+1>=maze[0].length)?0:maze[i][j+1][k];
+                        int north =(k-1<0)?0:maze[i][j][k-1];
+                        int south =(k+1>=maze[0][0].length)?0:maze[i][j][k+1];
+                        blockRenderer.updateBlock(maze[0].length-j-1, maze[0][0].length-k-1, i, maze[i][j][k], new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+                    }
+                }
+            }
+
+            //			blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(0,0,10,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(0,-10,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(0,10,0,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(-10,0,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//			blockRenderer.updateBlock(10,0,0,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+            int mark=0;
+//            while(true)
+//            {
+//                sleep_(5000);
+//                blockRenderer.updateBlock(0,0,-10,(mark++)%3,new int[]{0,0,0,0,0,0},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
+//
+//            }
+            while(true){
+                //Log.i("hhh1", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
+                sleep_(20);
+                player.update_pos();
+                Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
+            }
         }
     }
-    block_cnt = wall_cnt + 2*MAZE_SIZE*MAZE_SIZE;
-    modelBlock = new float[block_cnt][16];
-    block = new TexturedMesh[block_cnt];
-    blockTex = new Texture[block_cnt];
-
-    //init media players here
-    mp1 = MediaPlayer.create(HelloVrActivity.this, R.raw.seg1);
-    mp2 = MediaPlayer.create(HelloVrActivity.this, R.raw.seg1);
-    mp1.setNextMediaPlayer(mp2);
-
-    mp1.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-        // Override onCompletion method to apply desired operations.
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer){
-            // Whatever you want to do when the audio playback is done...
-            Log.i(TAG,"mp1");
-            mp1_init();
-        }
-    } );
-    mp2.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-        // Override onCompletion method to apply desired operations.
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer) {
-            // Whatever you want to do when the audio playback is done...
-            Log.i(TAG, "mp2");
-            mp2_init();
-        }
-    } );
-  }
-
-  public void initializeGvrView() {
-    setContentView(R.layout.common_ui);
-
-    GvrView gvrView = (GvrView) findViewById(R.id.gvr_view);
-    gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
-
-    gvrView.setRenderer((GvrView.StereoRenderer)null);
-    gvrView.setTransitionViewEnabled(true);
-
-    // Enable Cardboard-trigger feedback with Daydream headsets. This is a simple way of supporting
-    // Daydream controller input for basic interactions using the existing Cardboard trigger API.
-    gvrView.enableCardboardTriggerEmulation();
-
-    if (gvrView.setAsyncReprojectionEnabled(true)) {
-      // Async reprojection decouples the app framerate from the display framerate,
-      // allowing immersive interaction even at the throttled clockrates set by
-      // sustained performance mode.
-      AndroidCompat.setSustainedPerformanceMode(this, true);
-    }
-
-    setGvrView(gvrView);
-  }
-
-  @Override
-  public void onPause() {
-    super.onPause();
-  }
-
-  @Override
-  public void onResume() {
-    super.onResume();
-  }
-
-  /**
-   * Called when screen touched
-   */
-  @Override
-  public void onCardboardTrigger() {
-    Log.i(TAG, "onCardboardTrigger");
-    moving = true;
-    if (canCatchTarget()) {
-      caught = true;
-      resetTargetPosition();
-    }
-  }
-
-  /**
-   * Called when there's a screen action
-   * Mainly to detect trigger release and stop moving
-   */
-  @Override
-  public boolean onTouchEvent(MotionEvent event) {
-      switch (event.getAction()){
-          case MotionEvent.ACTION_UP:
-              Log.i(TAG, "UP");
-              moving = false;
-              break;
-          default:
-              Log.i(TAG, "DN");
-              moving = true;
-      }
-      return true;
-  }
-  @Override
-  public boolean onKeyDown(int keyCode, KeyEvent event) {
-      switch (keyCode){
-          case KeyEvent.KEYCODE_W:
-              moving = true;
-              dir = 1;
-              break;
-          case KeyEvent.KEYCODE_A:
-              moving = true;
-              dir = 2;
-              break;
-          case KeyEvent.KEYCODE_S:
-              moving = true;
-              dir = 3;
-              break;
-          case KeyEvent.KEYCODE_D:
-              moving = true;
-              dir = 4;
-              break;
-          default:
-      }
-      return true;
-  }
-  @Override
-  public boolean onKeyUp(int keyCode, KeyEvent event) {
-      switch (keyCode){
-          case KeyEvent.KEYCODE_W:
-              moving = false;
-              break;
-          case KeyEvent.KEYCODE_A:
-              moving = false;
-              break;
-          case KeyEvent.KEYCODE_S:
-              moving = false;
-              break;
-          case KeyEvent.KEYCODE_D:
-              moving = false;
-              break;
-          default:
-      }
-      return true;
-  }
-
-  private float getDistanceSquare() {
-    return (target_x - X)*(target_x - X) + (target_z - Z)*(target_z - Z);
-  }
-  //target's head related direction
-  private float getAngleDiff() {
-      return (float)Math.atan2(X - target_x, Z - target_z) - headRPY[1];
-  }
-
-  //calculate how much the sound is blocked by obstacles
-  //about 10% volume off per 0.2m
-  private int getBlockPoints() {
-      int blocked_points = 0;
-      int total_points = (int)(5*Math.sqrt(getDistanceSquare()));
-      for (int current_point = 1;current_point < total_points;current_point++) {
-          float point_x = (current_point*X + (total_points - current_point)*target_x)/total_points;
-          float point_z = (current_point*Z + (total_points - current_point)*target_z)/total_points;
-          if (maze[(int)(MAZE_SIZE*1.5+point_x)/3][(int)(MAZE_SIZE*1.5+point_z)/3] == 1) blocked_points++;
-      }
-      return blocked_points;
-  }
-  //can catch only with close distance and right direction
-  private boolean canCatchTarget() {
-      return getDistanceSquare() < DISTANCE_LIMIT*DISTANCE_LIMIT && Math.abs(getAngleDiff()) < 0.5;
-  }
-  //random set target position and avoid obstacles
-  private void resetTargetPosition() {
-      do {
-          target_x = (float)(2 * (MAZE_SIZE + 1) * Math.random() - MAZE_SIZE - 1);
-          target_z = (float)(2 * (MAZE_SIZE + 1) * Math.random() - MAZE_SIZE - 1);
-      } while (maze[(int)(MAZE_SIZE*1.5+target_x)/3][(int)(MAZE_SIZE*1.5+target_z)/3] == 1);
-      Matrix.setIdentityM(modelTarget, 0);
-      Matrix.translateM(modelTarget, 0, target_x, 0, target_z);
-  }
-  //target moves every frame
-  private void randomMoveTarget() {
-      int blockidx = (int)(MAZE_SIZE*1.5+target_x)/3;
-      int blockidz = (int)(MAZE_SIZE*1.5+target_z)/3;
-      float xinblock = target_x - (blockidx-(MAZE_SIZE>>1))*3;
-      float zinblock = target_z - (blockidz-(MAZE_SIZE>>1))*3;
-      //change direction randomly
-      targetMoveAngle += 0.1*(Math.random() - 0.5);
-      float x_inc = (float)(targetDirX*TARGET_SPEED*Math.sin(targetMoveAngle));
-      float z_inc = (float)(targetDirZ*TARGET_SPEED*Math.cos(targetMoveAngle));
-      //bounce off walls
-      if (xinblock > 1.5 - TARGET_RADIUS && maze[blockidx+1][blockidz] == 1 && x_inc > 0) {x_inc = 0; targetDirX = - targetDirX;}
-      else if (xinblock < -1.5 + TARGET_RADIUS && maze[blockidx-1][blockidz] == 1 && x_inc < 0) {x_inc = 0; targetDirX = - targetDirX;}
-      if (zinblock > 1.5 - TARGET_RADIUS && maze[blockidx][blockidz+1] == 1 && z_inc > 0) {z_inc = 0; targetDirZ = - targetDirZ;}
-      else if (zinblock < -1.5 + TARGET_RADIUS && maze[blockidx][blockidz-1] == 1 && z_inc < 0) {z_inc = 0; targetDirZ = - targetDirZ;}
-      target_x += x_inc;
-      target_z += z_inc;
-      Matrix.setIdentityM(modelTarget, 0);
-      Matrix.translateM(modelTarget, 0, target_x, 0, target_z);
-  }
-  //init media players in a new thread
-  private void mp1_init() {
-    new Thread(new Runnable() {@Override public void run() {
-      mp1.reset();
-      Uri uri;
-      if (!caught) {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + sound_files[sound_direction]);
-          mp1.setVolume(sound_volume, sound_volume);
-      }
-      else {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + R.raw.caught);
-          caught = false;
-          mp1.setVolume(1.0f, 1.0f);
-      }
-      try {
-        mp1.setDataSource(HelloVrActivity.this, uri);
-        mp1.prepare();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      mp2.setNextMediaPlayer(mp1);
-    }}).start();
-  }
-
-  private void mp2_init() {
-    new Thread(new Runnable() {@Override public void run() {
-      mp2.reset();
-      Uri uri;
-      if (!caught) {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + sound_files[sound_direction]);
-          mp2.setVolume(sound_volume, sound_volume);
-      }
-      else {
-          uri = Uri.parse("android.resource://com.google.vr.sdk.samples.hellovr/" + R.raw.caught);
-          caught = false;
-          mp2.setVolume(1.0f, 1.0f);
-      }
-      try {
-        mp2.setDataSource(HelloVrActivity.this, uri);
-        mp2.prepare();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      mp1.setNextMediaPlayer(mp2);
-    }}).start();
-  }
-  //choose HRTF files according to target's relative direction
-  private int angleToDirection(float angle) {
-      angle = angle * 180 / pi;
-      if (angle > 180) angle -= 360;
-      else if (angle <= -180) angle += 360;
-      if (90 < angle && angle <= 180) {
-          if (177.5 < angle) return 37;
-          else if (172.5 < angle && angle <= 177.5) return 38;
-          else if (167.5 < angle && angle <= 172.5) return 39;
-          else if (162.5 < angle && angle <= 167.5) return 40;
-          else if (157.5 < angle && angle <= 162.5) return 41;
-          else if (152.5 < angle && angle <= 157.5) return 42;
-          else if (147.5 < angle && angle <= 152.5) return 43;
-          else if (142.5 < angle && angle <= 147.5) return 44;
-          else if (137.5 < angle && angle <= 142.5) return 45;
-          else if (130 < angle && angle <= 137.5) return 46;
-          else if (120 < angle && angle <= 130) return 47;
-          else if (107.5 < angle && angle <= 120) return 48;
-          else return 49;
-      }
-      else if (0 < angle && angle <= 90) {
-          if (72.5 < angle) return 0;
-          else if (60 < angle && angle <= 72.5) return 1;
-          else if (50 < angle && angle <= 60) return 2;
-          else if (42.5 < angle && angle <= 50) return 3;
-          else if (37.5 < angle && angle <= 42.5) return 4;
-          else if (32.5 < angle && angle <= 37.5) return 5;
-          else if (27.5 < angle && angle <= 32.5) return 6;
-          else if (22.5 < angle && angle <= 27.5) return 7;
-          else if (17.5 < angle && angle <= 22.5) return 8;
-          else if (12.5 < angle && angle <= 17.5) return 9;
-          else if (7.5 < angle && angle <= 12.5) return 10;
-          else if (2.5 < angle && angle <= 7.5) return 11;
-          else return 12;
-      }
-      else if (-90 < angle && angle <= 0) {
-          if (-2.5 < angle) return 12;
-          else if (-7.5 < angle && angle <= -2.5) return 13;
-          else if (-12.5 < angle && angle <= -7.5) return 14;
-          else if (-17.5 < angle && angle <= -12.5) return 15;
-          else if (-22.5 < angle && angle <= -17.5) return 16;
-          else if (-27.5 < angle && angle <= -22.5) return 17;
-          else if (-32.5 < angle && angle <= -27.5) return 18;
-          else if (-37.5 < angle && angle <= -32.5) return 19;
-          else if (-42.5 < angle && angle <= -37.5) return 20;
-          else if (-50 < angle && angle <= -42.5) return 21;
-          else if (-60 < angle && angle <= -50) return 22;
-          else if (-72.5 < angle && angle <= -60) return 23;
-          else return 24;
-      }
-      else {
-          if (-107.5 < angle) return 25;
-          else if (-120 < angle && angle <= -107.5) return 26;
-          else if (-130 < angle && angle <= -120) return 27;
-          else if (-137.5 < angle && angle <= -130) return 28;
-          else if (-142.5 < angle && angle <= -137.5) return 29;
-          else if (-147.5 < angle && angle <= -142.5) return 30;
-          else if (-152.5 < angle && angle <= -147.5) return 31;
-          else if (-157.5 < angle && angle <= -152.5) return 32;
-          else if (-162.5 < angle && angle <= -157.5) return 33;
-          else if (-167.5 < angle && angle <= -162.5) return 34;
-          else if (-172.5 < angle && angle <= -167.5) return 35;
-          else if (-177.5 < angle && angle <= -172.5) return 36;
-          else return 37;
-      }
-  }
 }
