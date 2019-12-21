@@ -47,7 +47,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 		UVBuffer=ByteBuffer.allocateDirect(4*uv.length).order(ByteOrder.nativeOrder()).asFloatBuffer();UVBuffer.put(uv);UVBuffer.rewind();
 		indexBuffer=ByteBuffer.allocateDirect(4*indices.length).order(ByteOrder.nativeOrder()).asIntBuffer();indexBuffer.put(indices);indexBuffer.rewind();
 	}
-	public void changeContent(Bitmap content)
+	public synchronized void changeContent(Bitmap content)
 	{
 		texture=content.copy(content.getConfig(),false);
 		changed=true;
@@ -93,9 +93,13 @@ public class OverlayRenderer implements HeadlessRenderer {
 		Renderer.checkGlError();
 		
 		if(changed)
+		synchronized (this)
+		{
+		if(changed)
 		{
 			changed=false;
 			Log.i(LOG_TAG,"change picture");
+			GLES31.glDeleteTextures(1,textureId,0);
 			GLES31.glGenTextures(1,textureId,0);
 			GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
 			GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
@@ -108,6 +112,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 			GLUtils.texImage2D(GLES31.GL_TEXTURE_2D,0,texture,0);
 			GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D);
 			Renderer.checkGlError();
+		}
 		}
 		
 		GLES31.glEnableVertexAttribArray(glParam_a_Position);
