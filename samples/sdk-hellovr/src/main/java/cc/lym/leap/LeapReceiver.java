@@ -44,7 +44,14 @@ public class LeapReceiver
 				while(true)
 				{
 					try{
-						sock.receive(packet);
+						int len;
+						do
+						{
+							sock.receive(packet);
+							len=packet.getLength();
+							if(len!=78)
+								Log.w(LOG_TAG,"corrupted packet, try again");
+						}while(len!=78);
 						DataInputStream in=new DataInputStream(new ByteArrayInputStream(buffer));
 						Hand hand=new Hand();
 						hand.seqNo=in.readLong();
