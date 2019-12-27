@@ -87,19 +87,25 @@ public class Player extends Entity{
     }
 
     public void destroy_block(){
-        Scene.Point point=scene.transform_array_to_render(4,1,2);
-        int up =scene.get_neighbor_block_id(4,1,2, Scene.Position.UP);
-        int down =scene.get_neighbor_block_id(4,1,2, Scene.Position.DOWN);
-        int east =scene.get_neighbor_block_id(4,1,2, Scene.Position.EAST);
-        int west =scene.get_neighbor_block_id(4,1,2, Scene.Position.WEST);
-        int north =scene.get_neighbor_block_id(4,1,2, Scene.Position.NORTH);
-        int south =scene.get_neighbor_block_id(4,1,2, Scene.Position.SOUTH);
-        blockRenderer.updateBlock(point.x,point.y,point.z,0, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
-        scene.scene[4][1][2]=0;
-        Log.i("xyz", "x: "+point.x+"y: "+point.y+"z: "+point.z);
+        Scene.Point block_center_pos_render=get_facing_block();
+        Scene.Point block_center_pos_array=scene.transform_render_to_array(block_center_pos_render.x,block_center_pos_render.y,block_center_pos_render.z);
+        int i=Math.round(block_center_pos_array.x);
+        int j=Math.round(block_center_pos_array.y);
+        int k=Math.round(block_center_pos_array.z);
+        int up =scene.get_neighbor_block_id(i,j,k, Scene.Position.UP);
+        int down =scene.get_neighbor_block_id(i,j,k, Scene.Position.DOWN);
+        int east =scene.get_neighbor_block_id(i,j,k, Scene.Position.EAST);
+        int west =scene.get_neighbor_block_id(i,j,k, Scene.Position.WEST);
+        int north =scene.get_neighbor_block_id(i,j,k, Scene.Position.NORTH);
+        int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
+        blockRenderer.updateBlock((int)Math.round(block_center_pos_render.x),(int)Math.round(block_center_pos_render.y),(int)Math.round(block_center_pos_render.z),0, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+        scene.scene[i][j][k]=0;
+        Log.i("xyz", "x: "+block_center_pos_render.x+"y: "+block_center_pos_render.y+"z: "+block_center_pos_render.z);
     }
 
-    private void get_facing_block(){
-
+    private Scene.Point get_facing_block(){
+        Scene.Point forward_v = scene.transform_sdk_to_render(headRPY[0],headRPY[1],headRPY[2]);
+        Log.i("forward_v", "x: "+forward_v.x+"y: "+forward_v.y+"z: "+forward_v.z);
+        return scene.new Point(1,2,3);
     }
 }
