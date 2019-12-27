@@ -2,7 +2,6 @@ package cc.lym.Renderer;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.opengl.GLES20;
 import android.opengl.GLES31;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
@@ -24,7 +23,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import cc.lym.util.Location;
 import cc.lym.util.Supplier;
+import cc.lym.util.Util;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
@@ -165,23 +167,6 @@ public class BlockRenderer implements HeadlessRenderer {
 			this.newIllumination=newIllumination;
 		}
 	}
-	private static long fold(long val,long min,long max)
-	{
-		val=(val-min)%(max-min);
-		if(val<0)val+=(max-min);
-		return val+min;
-	}
-	private static double fold(double val,long min,long max)
-	{
-		val=(val-(double)min)%(max-min);
-		if(val<0)val+=(max-min);
-		return val+min;
-	}
-	
-	/**
-	 * An object that holds the player's viewpoint location.
-	 */
-	public static class Location{final double x,y,z;public Location(double x,double y,double z){this.x=x;this.y=y;this.z=z;}}
 	
 	private final long xMin,xMax,yMin,yMax,zMin,zMax;
 	private final int illuMin,illuMax;
@@ -307,7 +292,7 @@ public class BlockRenderer implements HeadlessRenderer {
 				Log.e(LOG_TAG,"illegal surrounding block ID "+newBlockID);
 				throw new IllegalArgumentException("illegal surrounding block ID "+newBlockID);
 			}
-		pendingOperations.add(new UpdateBlock(fold(x,xMin,xMax),fold(y,yMin,yMax),fold(z,zMin,zMax),newBlockID,surroundingBlocks,illumination,illuMin,illuMax));
+		pendingOperations.add(new UpdateBlock(Util.fold(x,xMin,xMax), Util.fold(y,yMin,yMax), Util.fold(z,zMin,zMax),newBlockID,surroundingBlocks,illumination,illuMin,illuMax));
 		pendingOperationCount.release();
 		if(DEBUG)
 		{
@@ -342,7 +327,7 @@ public class BlockRenderer implements HeadlessRenderer {
 			Log.w(LOG_TAG,"illegal illumination "+newIllumination);
 			newIllumination=Math.max(illuMin,Math.min(illuMax,newIllumination));
 		}
-		pendingOperations.add(new UpdateIllumination(fold(x,xMin,xMax),fold(y,yMin,yMax),fold(z,zMin,zMax),newIllumination));
+		pendingOperations.add(new UpdateIllumination(Util.fold(x,xMin,xMax), Util.fold(y,yMin,yMax), Util.fold(z,zMin,zMax),newIllumination));
 		pendingOperationCount.release();
 		if(DEBUG)Log.i(LOG_TAG,String.format("updillum %d %d %d %d",x,y,z,newIllumination));
 	}
@@ -354,7 +339,7 @@ public class BlockRenderer implements HeadlessRenderer {
 	private IntBuffer indexBuffer;
 	private final Object bufferLock=new Object();
 	
-	class DaemonThread extends Thread
+	private class DaemonThread extends Thread
 	{
 		@Override public void run()
 		{
@@ -692,7 +677,7 @@ public class BlockRenderer implements HeadlessRenderer {
 	public void onNewFrame(HeadTransform headTransform)
 	{
 		Location tmp=locationSupplier.get();
-		location=new Location(fold(tmp.x,xMin,xMax),fold(tmp.y,yMin,yMax),fold(tmp.z,zMin,zMax));//fold
+		location=new Location(Util.fold(tmp.x,xMin,xMax), Util.fold(tmp.y,yMin,yMax), Util.fold(tmp.z,zMin,zMax));//fold
 		upperBound[0]=(int)(location.x+sceneSize[0]/2);upperBound[1]=(int)(location.y+sceneSize[1]/2);upperBound[2]=(int)(location.z+sceneSize[2]/2);
 		lowerBound[0]=(int)(location.x-sceneSize[0]/2);lowerBound[1]=(int)(location.y-sceneSize[1]/2);lowerBound[2]=(int)(location.z-sceneSize[2]/2);
 		headTransform.getHeadView(headTrans,0);
@@ -733,15 +718,15 @@ public class BlockRenderer implements HeadlessRenderer {
 			indexBuffer=this.indexBuffer;
 		}
 		
-		GLES31.glVertexAttribIPointer(glParam_a_Position,3, GLES20.GL_INT,0,PositionBuffer);
-		GLES31.glVertexAttribIPointer(glParam_a_BlockPosition,3, GLES20.GL_INT,0,BlockPositionBuffer);
-		GLES31.glVertexAttribPointer(glParam_a_UV,2, GLES20.GL_FLOAT,false,0,UVBuffer);
-		GLES31.glVertexAttribPointer(glParam_a_illu,1, GLES20.GL_FLOAT,false,0,illuBuffer);
+		GLES31.glVertexAttribIPointer(glParam_a_Position,3, GLES31.GL_INT,0,PositionBuffer);
+		GLES31.glVertexAttribIPointer(glParam_a_BlockPosition,3, GLES31.GL_INT,0,BlockPositionBuffer);
+		GLES31.glVertexAttribPointer(glParam_a_UV,2, GLES31.GL_FLOAT,false,0,UVBuffer);
+		GLES31.glVertexAttribPointer(glParam_a_illu,1, GLES31.GL_FLOAT,false,0,illuBuffer);
 		Renderer.checkGlError();
 		GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
 		GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId[0]);
 		Renderer.checkGlError();
-		GLES31.glDrawElements(GLES20.GL_TRIANGLES,indexBuffer.limit(),GLES31.GL_UNSIGNED_INT,indexBuffer);
+		GLES31.glDrawElements(GLES31.GL_TRIANGLES,indexBuffer.limit(),GLES31.GL_UNSIGNED_INT,indexBuffer);
 		Renderer.checkGlError();
 	}
 	@Override

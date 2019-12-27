@@ -33,6 +33,7 @@ import cc.lym.Renderer.BlockRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 import cc.lym.Renderer.OverlayRenderer;
 import cc.lym.Renderer.Renderer;
+import cc.lym.util.Location;
 
 /**
  * A Google VR sample application.
@@ -83,7 +84,7 @@ public class HelloVrActivity extends GvrActivity {
         }catch(IOException e){throw new RuntimeException("IOException",e);}
         try{
             GvrView.StereoRenderer renderer= Renderer.base()
-                    .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new BlockRenderer.Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
+                    .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
                     .andThen(headTransformProvider=new HeadTransformProvider())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png"))));
             gvrView.setRenderer(renderer);
