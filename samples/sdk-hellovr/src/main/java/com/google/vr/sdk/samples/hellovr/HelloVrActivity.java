@@ -199,7 +199,7 @@ public class HelloVrActivity extends GvrActivity {
                         int north =scene.get_neighbor_block_id(i,j,k, Scene.Position.NORTH);
                         int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
                         Scene.Point point=scene.transform_array_to_render(i,j,k);
-                        blockRenderer.updateBlock(point.x, point.y, point.z, scene.get_id(i,j,k), new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+                        blockRenderer.updateBlock((int)Math.round(point.x), (int)Math.round(point.y), (int)Math.round(point.z), scene.get_id(i,j,k), new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
                     }
                 }
             }
