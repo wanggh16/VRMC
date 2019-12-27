@@ -2,7 +2,7 @@ package com.google.vr.sdk.samples.hellovr;
 
 public class Animal extends Entity {
 
-    public Animal(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up ,float[] center_pos, char[][][] scene) {
+    public Animal(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up ,float[] center_pos, Scene scene) {
         super(box_x_half, box_y_half, box_z_half_down, box_z_half_up ,center_pos, scene);
     }
 

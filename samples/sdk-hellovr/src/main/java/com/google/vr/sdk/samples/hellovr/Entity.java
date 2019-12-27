@@ -12,10 +12,10 @@ abstract public class Entity {
 
     public float[] center_pos;
     public float[] speed;
-    private char[][][] scene;   //场景三维数组
+    protected Scene scene;   //场景三维数组
     private float g=0.0098f;
 
-    public Entity(float box_x_half,float box_y_half,float box_z_half_down,float box_z_half_up, float[] center_pos, char[][][] scene){
+    public Entity(float box_x_half,float box_y_half,float box_z_half_down,float box_z_half_up, float[] center_pos, Scene scene){
         this.box_x_half=box_x_half;
         this.box_y_half=box_y_half;
         this.box_z_half_down=box_z_half_down;
@@ -64,13 +64,13 @@ abstract public class Entity {
     public int collide_x(){
         for(int zz=(int)Math.ceil(center_pos[2]-box_z_half_down-BOX_HALF_WIDTH-0.001);zz<center_pos[2]+box_z_half_up+BOX_HALF_WIDTH;zz++) {
             Log.i("collide", "zz:"+zz);
-            if (zz < 0 || zz >= scene.length) return 0;
+            if (zz < 0 || zz >= scene.get_scene_height()) return 0;
             for (int yy = (int) Math.ceil(center_pos[1] - box_y_half - BOX_HALF_WIDTH - 0.001); yy < center_pos[1] + box_y_half + BOX_HALF_WIDTH; yy++) {
-                if (yy < 0 || yy >= scene[0][0].length) continue;
+                if (yy < 0 || yy >= scene.get_scene_width_we()) continue;
                 int first = (int) Math.ceil(center_pos[0] - box_x_half - BOX_HALF_WIDTH - ALLOWANCE);
                 for (int i = first; i <= center_pos[0]; i++) {
-                    if (i < 0 || i >= scene[0].length) return 0;
-                    if (scene[zz][scene[0].length - i - 1][scene[0][0].length - yy - 1] != 0) {
+                    if (i < 0 || i >= scene.get_scene_width_ns()) return 0;
+                    if (scene.scene[zz][scene.get_scene_width_ns() - i - 1][scene.get_scene_width_we() - yy - 1] != 0) {
                         Log.i("collide", "collide:x-");
                         //center_pos[0]=i+box_x_half+BOX_HALF_WIDTH+ALLOWANCE;
                         return -1;
@@ -78,8 +78,8 @@ abstract public class Entity {
                 }
                 first = (int) Math.floor(center_pos[0] + box_x_half + BOX_HALF_WIDTH + ALLOWANCE);
                 for (int i = first; i >= center_pos[0]; i--) {
-                    if (i < 0 || i >= scene[0].length) return 0;
-                    if (scene[zz][scene[0].length - i - 1][scene[0][0].length - yy - 1] != 0) {
+                    if (i < 0 || i >= scene.get_scene_width_ns()) return 0;
+                    if (scene.scene[zz][scene.get_scene_width_ns() - i - 1][scene.get_scene_width_we() - yy - 1] != 0) {
                         Log.i("collide", "collide:x+");
                         //center_pos[0]=i-box_x_half-BOX_HALF_WIDTH-ALLOWANCE;
                         return 1;
@@ -92,13 +92,13 @@ abstract public class Entity {
 
     public int collide_y(){
         for(int zz=(int)Math.ceil(center_pos[2]-box_z_half_down-BOX_HALF_WIDTH-0.001);zz<center_pos[2]+box_z_half_up+BOX_HALF_WIDTH;zz++) {
-            if(zz<0||zz>=scene.length)return 0;
+            if(zz<0||zz>=scene.get_scene_height())return 0;
             for (int xx = (int) Math.ceil(center_pos[0] - box_x_half - BOX_HALF_WIDTH - 0.001); xx < center_pos[0] + box_x_half + BOX_HALF_WIDTH; xx++) {
-                if (xx < 0 || xx >= scene[0].length) continue;
+                if (xx < 0 || xx >= scene.get_scene_width_ns()) continue;
                 int first = (int) Math.ceil(center_pos[1] - box_y_half - BOX_HALF_WIDTH - ALLOWANCE);
                 for (int i = first; i <= center_pos[1]; i++) {
-                    if (i < 0 || i >= scene[0][0].length) return 0;
-                    if (scene[zz][scene[0].length - xx - 1][scene[0][0].length - i - 1] != 0) {
+                    if (i < 0 || i >= scene.get_scene_width_we()) return 0;
+                    if (scene.scene[zz][scene.get_scene_width_ns() - xx - 1][scene.get_scene_width_we() - i - 1] != 0) {
                         Log.i("collide", "collide:y-");
                         //center_pos[1]=i+box_y_half+BOX_HALF_WIDTH+ALLOWANCE;
                         return -1;
@@ -106,8 +106,8 @@ abstract public class Entity {
                 }
                 first = (int) Math.floor(center_pos[1] + box_y_half + BOX_HALF_WIDTH + ALLOWANCE);
                 for (int i = first; i >= center_pos[1]; i--) {
-                    if (i < 0 || i >= scene[0][0].length) return 0;
-                    if (scene[zz][scene[0].length - xx - 1][scene[0][0].length - i - 1] != 0) {
+                    if (i < 0 || i >= scene.get_scene_width_we()) return 0;
+                    if (scene.scene[zz][scene.get_scene_width_ns() - xx - 1][scene.get_scene_width_we() - i - 1] != 0) {
                         Log.i("collide", "collide:y+");
                         //center_pos[1]=i-box_y_half-BOX_HALF_WIDTH-ALLOWANCE;
                         return 1;
@@ -120,22 +120,22 @@ abstract public class Entity {
 
     public int collide_z(){
         for(int yy=(int)Math.ceil(center_pos[1]-box_y_half-BOX_HALF_WIDTH-0.001);yy<center_pos[1]+box_y_half+BOX_HALF_WIDTH;yy++) {
-            if(yy<0||yy>=scene[0][0].length)continue;
+            if(yy<0||yy>=scene.get_scene_width_we())continue;
             for (int xx = (int) Math.ceil(center_pos[0] - box_x_half - BOX_HALF_WIDTH - 0.001); xx < center_pos[0] + box_x_half + BOX_HALF_WIDTH; xx++) {
-                if (xx < 0 || xx >= scene[0].length) continue;
+                if (xx < 0 || xx >= scene.get_scene_width_ns()) continue;
 
                 int first = (int)Math.ceil(center_pos[2]-box_z_half_down-BOX_HALF_WIDTH-0.2);
                 for (int i = first; i <= center_pos[2]; i++) {
-                    if (i < 0 || i >= scene.length) return 0;
-                    if (scene[i][scene[0].length - xx - 1][scene[0][0].length - yy - 1] != 0) {
+                    if (i < 0 || i >= scene.get_scene_height()) return 0;
+                    if (scene.scene[i][scene.get_scene_width_ns() - xx - 1][scene.get_scene_width_we() - yy - 1] != 0) {
                         //center_pos[2]=i+1;
                         return -1;
                     }
                 }
                 first = (int)Math.floor(center_pos[2]+box_z_half_up+BOX_HALF_WIDTH+ALLOWANCE);
                 for (int i = first; i >= center_pos[2]; i--) {
-                    if (i < 0 || i >= scene.length) return 0;
-                    if (scene[i][scene[0].length - xx - 1][scene[0][0].length - yy - 1] != 0) {
+                    if (i < 0 || i >= scene.get_scene_height()) return 0;
+                    if (scene.scene[i][scene.get_scene_width_ns() - xx - 1][scene.get_scene_width_we() - yy - 1] != 0) {
                         //center_pos[2]=i+1;
                         return 1;
                     }

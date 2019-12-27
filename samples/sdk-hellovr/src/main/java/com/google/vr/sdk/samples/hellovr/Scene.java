@@ -184,8 +184,13 @@ public class Scene {
             this.x=x;this.y=y;this.z=z;
         }
     }
-    //坐标变换，由场景的(i,j,k)变到渲染引擎的(x,y,z)
-    public Point transform_to_render(int scene_i,int scene_j,int scene_k){
+    //坐标变换，由场景数组的(i,j,k)变到渲染引擎的(x,y,z)
+    public Point transform_array_to_render(int scene_i, int scene_j, int scene_k){
         return new Point(get_scene_width_ns()-scene_j-1,get_scene_width_we()-scene_k-1, scene_i);
+    }
+
+    //坐标变换，由sdk的(x,y,z)变到渲染引擎的(x,y,z)
+    public Point transform_sdk_to_render(int x,int y,int z){
+        return new Point(-z,-x,y);
     }
 }
