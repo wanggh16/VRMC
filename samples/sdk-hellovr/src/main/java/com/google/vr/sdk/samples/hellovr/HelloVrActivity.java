@@ -99,7 +99,7 @@ public class HelloVrActivity extends GvrActivity {
 
         headRPY = new float[3];
         scene=new Scene();
-        player=new Player(0.25f,0.25f,0.9f, 0.3f,new float[]{4,4,5}, headTransformProvider, blockRenderer, scene.scene);
+        player=new Player(0.25f,0.25f,0.9f, 0.3f,new float[]{4,4,5}, headTransformProvider, blockRenderer, scene);
 
     }
 
@@ -123,6 +123,7 @@ public class HelloVrActivity extends GvrActivity {
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
                 player.jump();
+                player.destroy_block();
                 player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
@@ -196,7 +197,7 @@ public class HelloVrActivity extends GvrActivity {
                         int west =scene.get_neighbor_block_id(i,j,k, Scene.Position.WEST);
                         int north =scene.get_neighbor_block_id(i,j,k, Scene.Position.NORTH);
                         int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
-                        Scene.Point point=scene.transform_to_render(i,j,k);
+                        Scene.Point point=scene.transform_array_to_render(i,j,k);
                         blockRenderer.updateBlock(point.x, point.y, point.z, scene.get_id(i,j,k), new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
                     }
                 }

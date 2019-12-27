@@ -4,7 +4,6 @@ import android.util.Log;
 
 import cc.lym.Renderer.BlockRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
-import cc.lym.util.Supplier;
 
 public class Player extends Entity{
 
@@ -17,7 +16,7 @@ public class Player extends Entity{
         FORWARD,BACKWARD,LEFTWARD,RIGHTWARD
     }
 
-    public Player(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up, float[] center_pos, HeadTransformProvider head, BlockRenderer blockRenderer,char[][][] scene) {
+    public Player(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up, float[] center_pos, HeadTransformProvider head, BlockRenderer blockRenderer,Scene scene) {
         super(box_x_half, box_y_half, box_z_half_down, box_z_half_up, center_pos, scene);
         this.move=new boolean[]{false,false,false,false};
         this.head=head;
@@ -28,7 +27,8 @@ public class Player extends Entity{
     @Override
     public void set_next_action() {
         head.getForwardVector(headRPY,0);
-        //Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
+        Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
+        Log.i("hhh", "posx: "+center_pos[0]+", posy: "+center_pos[1]+", posz: "+center_pos[2]);
         if(move[0]){
             speed[0] = -MOVE_SPEED * headRPY[2];
             speed[1] = -MOVE_SPEED * headRPY[0];
@@ -87,7 +87,16 @@ public class Player extends Entity{
     }
 
     public void destroy_block(){
-        //blockRenderer.updateBlock(0,0,0,);
+        Scene.Point point=scene.transform_array_to_render(4,1,2);
+        int up =scene.get_neighbor_block_id(4,1,2, Scene.Position.UP);
+        int down =scene.get_neighbor_block_id(4,1,2, Scene.Position.DOWN);
+        int east =scene.get_neighbor_block_id(4,1,2, Scene.Position.EAST);
+        int west =scene.get_neighbor_block_id(4,1,2, Scene.Position.WEST);
+        int north =scene.get_neighbor_block_id(4,1,2, Scene.Position.NORTH);
+        int south =scene.get_neighbor_block_id(4,1,2, Scene.Position.SOUTH);
+        blockRenderer.updateBlock(point.x,point.y,point.z,0, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+        scene.scene[4][1][2]=0;
+        Log.i("xyz", "x: "+point.x+"y: "+point.y+"z: "+point.z);
     }
 
     private void get_facing_block(){
