@@ -87,7 +87,7 @@ public class HandRenderer implements HeadlessRenderer {
 	private int glParam_u_norm;
 	private final float[]headTrans=new float[16];
 	private float alpha=0,beta=0;
-	private float[]getAlphaBeta(){return new float[]{alpha,beta};}
+	public float[]getAlphaBeta(){return new float[]{alpha,beta};}
 	
 	@Override
 	public void onNewFrame(HeadTransform headTransform)

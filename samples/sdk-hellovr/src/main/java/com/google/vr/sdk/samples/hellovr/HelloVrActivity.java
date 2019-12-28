@@ -30,6 +30,7 @@ import com.google.vr.sdk.base.GvrView;
 import java.io.IOException;
 
 import cc.lym.Renderer.BlockRenderer;
+import cc.lym.Renderer.HandRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 import cc.lym.Renderer.OverlayRenderer;
 import cc.lym.Renderer.Renderer;
@@ -56,6 +57,7 @@ public class HelloVrActivity extends GvrActivity {
 
     BlockRenderer blockRenderer;
     HeadTransformProvider headTransformProvider;
+    HandRenderer handRenderer;
     OverlayRenderer overlayRenderer;
     Bitmap overlay;
 
@@ -86,6 +88,7 @@ public class HelloVrActivity extends GvrActivity {
             GvrView.StereoRenderer renderer= Renderer.base()
                     .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
                     .andThen(headTransformProvider=new HeadTransformProvider())
+                    .andThen(handRenderer=new HandRenderer())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png"))));
             gvrView.setRenderer(renderer);
         }catch(IOException ignored){}
@@ -100,7 +103,7 @@ public class HelloVrActivity extends GvrActivity {
 
         headRPY = new float[3];
         scene=new Scene();
-        player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, scene);
+        player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, handRenderer, scene);
 
     }
 
