@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import javax.microedition.khronos.egl.EGLConfig;
 
 import cc.lym.util.Location;
+import cc.lym.util.RandomAccessModel;
 import cc.lym.util.Supplier;
 import cc.lym.util.Util;
 
@@ -242,19 +243,65 @@ public class BlockRenderer implements HeadlessRenderer {
 		illuBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asFloatBuffer();
 		indexBuffer=ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).asIntBuffer();
 	}
-//	public BlockRenderer(long xMin, long xMax, long yMin, long yMax, long zMin, long zMax, int illuMin, int illuMax,
-//						 Supplier<Location>locationSupplier, byte[] texture, int[][][]blocks)
-//	{
-//		this(xMin,xMax,yMin,yMax,zMin,zMax,illuMin,illuMax,locationSupplier,texture);
-//		if(xMin<0||yMin<0||zMin<0)
-//			Log.e(LOG_TAG,"illegal west-south-bottom corner for array init: "+xMin+" "+yMin+" "+zMin);
-//		for(long i=xMin;i<xMax;i++)
-//			for(long j=yMin;j<yMax;j++)
-//				for(long k=zMin;k<zMax;k++)
-//				{
-//
-//				}
-//	}
+	public void init(RandomAccessModel model,RandomAccessModel illumination,int xRange,int yRange,int zRange)
+	{
+		Log.w(LOG_TAG,"init");
+		synchronized (daemon)
+		{
+			pendingOperationCount.drainPermits();
+			pendingOperations.clear();
+			exposedFaces.clear();
+			Log.w(LOG_TAG,"init begin");
+			for(int i=0;i<xRange-1;i++)
+				for(int j=0;j<yRange-1;j++)
+					for(int k=0;k<zRange-1;k++)
+					{
+						for(Direction thisDir:new Direction[]{Direction.EAST,Direction.NORTH,Direction.UP})
+						{
+							Direction neighborDir=null;
+							switch(thisDir)
+							{
+								case UP:	neighborDir=Direction.DOWN;		break;
+								case EAST:	neighborDir=Direction.WEST;		break;
+								case NORTH:	neighborDir=Direction.SOUTH;	break;
+							}
+							int neighbourID=-1,thisID=model.lookup(i,j,k);
+							switch(thisDir)
+							{
+								case UP:	neighbourID=model.lookup(i,j,k+1);break;
+								case EAST:	neighbourID=model.lookup(i+1,j,k);break;
+								case NORTH:	neighbourID=model.lookup(i,j+1,k);break;
+							}
+							int neighbourIllu=illuMax,thisIllu=illumination.lookup(i,j,k);
+							switch(thisDir)
+							{
+								case EAST:	neighbourIllu=illumination.lookup(i+1,j,k);break;
+								case NORTH:	neighbourIllu=illumination.lookup(i,j+1,k);break;
+								case UP:	neighbourIllu=illumination.lookup(i,j,k+1);break;
+							}
+							long neighbourX=i,neighbourY=j,neibhbourZ=k,thisX=i,thisY=j,thisZ=k;
+							switch(neighborDir)
+							{
+								case WEST:	neighbourX=neighbourX+1;if(neighbourX==xMax)neighbourX=xMin;break;
+								case SOUTH:	neighbourY=neighbourY+1;if(neighbourY==yMax)neighbourY=yMin;break;
+								case DOWN:	neibhbourZ=neibhbourZ+1;if(neibhbourZ==zMax)neibhbourZ=zMin;break;
+							}
+							FaceLocation thisLoc=new FaceLocation(thisX,thisY,thisZ,thisDir);
+							FaceLocation neighbourLoc=new FaceLocation(neighbourX,neighbourY,neibhbourZ,neighborDir);
+							if((thisID!=0&&neighbourID==0)||(opaque[thisID]&&!opaque[neighbourID]))
+							{
+								exposedFaces.put(thisLoc,new FaceAttr(neighbourIllu,thisID,!opaque[thisID],thisIllu));
+							}
+							if((neighbourID!=0&&thisID==0)||(opaque[neighbourID]&&!opaque[thisID]))
+							{
+								exposedFaces.put(neighbourLoc,new FaceAttr(thisIllu,neighbourID,!opaque[neighbourID],neighbourIllu));
+							}
+						}
+					}
+			Log.w(LOG_TAG,"init OK");
+			updateIllumination(xMin,yMin,zMin,illumination.lookup(xMin,yMin,zMin));//to restart daemon
+		}
+	}
 	/**
 	 * Update a block
 	 * @param x Position of the updated block
@@ -348,113 +395,116 @@ public class BlockRenderer implements HeadlessRenderer {
 			{
 				int counter=0;
 				pendingOperationCount.acquireUninterruptibly();
-				try
+				synchronized (this)
 				{
-					long deadline=System.nanoTime()+15000000;
-					do
+					try
 					{
-						Op _tmp_op=pendingOperations.poll();
-						counter++;
-						try
+						long deadline=System.nanoTime()+15000000;
+						do
 						{
-							if(_tmp_op instanceof UpdateBlock)
+							Op _tmp_op=pendingOperations.poll();
+							counter++;
+							try
 							{
-								UpdateBlock op=(UpdateBlock)_tmp_op;
-								for(Direction thisDir:Direction.values())
+								if(_tmp_op instanceof UpdateBlock)
 								{
-									Direction neighborDir=null;
-									switch(thisDir)
+									UpdateBlock op=(UpdateBlock)_tmp_op;
+									for(Direction thisDir:Direction.values())
 									{
-										case UP:	neighborDir=Direction.DOWN;		break;
-										case SOUTH:	neighborDir=Direction.NORTH;	break;
-										case EAST:	neighborDir=Direction.WEST;		break;
-										case NORTH:	neighborDir=Direction.SOUTH;	break;
-										case WEST:	neighborDir=Direction.EAST;		break;
-										case DOWN:	neighborDir=Direction.UP;		break;
-									}
-									int neighbourID=-1,thisID=op.newBlockID;
-									switch(thisDir)
-									{
-										case UP:	neighbourID=op.surroundingBlocks[0];break;
-										case SOUTH:	neighbourID=op.surroundingBlocks[1];break;
-										case EAST:	neighbourID=op.surroundingBlocks[2];break;
-										case NORTH:	neighbourID=op.surroundingBlocks[3];break;
-										case WEST:	neighbourID=op.surroundingBlocks[4];break;
-										case DOWN:	neighbourID=op.surroundingBlocks[5];break;
-									}
-									int neighbourIllu=illuMax,thisIllu=op.illumination[1][1][1];
-									switch(thisDir)
-									{
-										case WEST:	neighbourIllu=op.illumination[0][1][1];break;
-										case EAST:	neighbourIllu=op.illumination[2][1][1];break;
-										case SOUTH:	neighbourIllu=op.illumination[1][0][1];break;
-										case NORTH:	neighbourIllu=op.illumination[1][2][1];break;
-										case DOWN:	neighbourIllu=op.illumination[1][1][0];break;
-										case UP:	neighbourIllu=op.illumination[1][1][2];break;
-									}
-									long neighbourX=op.x,neighbourY=op.y,neibhbourZ=op.z,thisX=op.x,thisY=op.y,thisZ=op.z;
-									switch(neighborDir)
-									{
-										case WEST:	neighbourX=neighbourX+1;if(neighbourX==xMax)neighbourX=xMin;break;
-										case EAST:	if(neighbourX==xMin)neighbourX=xMax;neighbourX=neighbourX-1;break;
-										case SOUTH:	neighbourY=neighbourY+1;if(neighbourY==yMax)neighbourY=yMin;break;
-										case NORTH:	if(neighbourY==yMin)neighbourY=yMax;neighbourY=neighbourY-1;break;
-										case DOWN:	neibhbourZ=neibhbourZ+1;if(neibhbourZ==zMax)neibhbourZ=zMin;break;
-										case UP:	if(neibhbourZ==zMin)neibhbourZ=zMax;neibhbourZ=neibhbourZ-1;break;
-									}
-									FaceLocation thisLoc=new FaceLocation(thisX,thisY,thisZ,thisDir);
-									FaceLocation neighbourLoc=new FaceLocation(neighbourX,neighbourY,neibhbourZ,neighborDir);
-									if((thisID!=0&&neighbourID==0)||(opaque[thisID]&&!opaque[neighbourID]))
-									{
-										FaceAttr obj=exposedFaces.get(thisLoc);
-										if(obj!=null)obj.blockID=thisID;
-										else exposedFaces.put(thisLoc,new FaceAttr(neighbourIllu,thisID,!opaque[thisID],thisIllu));
-									}
-									else
-									{
-										exposedFaces.remove(thisLoc);
-									}
-									if((neighbourID!=0&&thisID==0)||(opaque[neighbourID]&&!opaque[thisID]))
-									{
-										FaceAttr obj=exposedFaces.get(neighbourLoc);
-										if(obj!=null)obj.blockID=neighbourID;
-										else exposedFaces.put(neighbourLoc,new FaceAttr(thisIllu,neighbourID,!opaque[neighbourID],neighbourIllu));
-									}
-									else
-									{
-										exposedFaces.remove(neighbourLoc);
+										Direction neighborDir=null;
+										switch(thisDir)
+										{
+											case UP:	neighborDir=Direction.DOWN;		break;
+											case SOUTH:	neighborDir=Direction.NORTH;	break;
+											case EAST:	neighborDir=Direction.WEST;		break;
+											case NORTH:	neighborDir=Direction.SOUTH;	break;
+											case WEST:	neighborDir=Direction.EAST;		break;
+											case DOWN:	neighborDir=Direction.UP;		break;
+										}
+										int neighbourID=-1,thisID=op.newBlockID;
+										switch(thisDir)
+										{
+											case UP:	neighbourID=op.surroundingBlocks[0];break;
+											case SOUTH:	neighbourID=op.surroundingBlocks[1];break;
+											case EAST:	neighbourID=op.surroundingBlocks[2];break;
+											case NORTH:	neighbourID=op.surroundingBlocks[3];break;
+											case WEST:	neighbourID=op.surroundingBlocks[4];break;
+											case DOWN:	neighbourID=op.surroundingBlocks[5];break;
+										}
+										int neighbourIllu=illuMax,thisIllu=op.illumination[1][1][1];
+										switch(thisDir)
+										{
+											case WEST:	neighbourIllu=op.illumination[0][1][1];break;
+											case EAST:	neighbourIllu=op.illumination[2][1][1];break;
+											case SOUTH:	neighbourIllu=op.illumination[1][0][1];break;
+											case NORTH:	neighbourIllu=op.illumination[1][2][1];break;
+											case DOWN:	neighbourIllu=op.illumination[1][1][0];break;
+											case UP:	neighbourIllu=op.illumination[1][1][2];break;
+										}
+										long neighbourX=op.x,neighbourY=op.y,neibhbourZ=op.z,thisX=op.x,thisY=op.y,thisZ=op.z;
+										switch(neighborDir)
+										{
+											case WEST:	neighbourX=neighbourX+1;if(neighbourX==xMax)neighbourX=xMin;break;
+											case EAST:	if(neighbourX==xMin)neighbourX=xMax;neighbourX=neighbourX-1;break;
+											case SOUTH:	neighbourY=neighbourY+1;if(neighbourY==yMax)neighbourY=yMin;break;
+											case NORTH:	if(neighbourY==yMin)neighbourY=yMax;neighbourY=neighbourY-1;break;
+											case DOWN:	neibhbourZ=neibhbourZ+1;if(neibhbourZ==zMax)neibhbourZ=zMin;break;
+											case UP:	if(neibhbourZ==zMin)neibhbourZ=zMax;neibhbourZ=neibhbourZ-1;break;
+										}
+										FaceLocation thisLoc=new FaceLocation(thisX,thisY,thisZ,thisDir);
+										FaceLocation neighbourLoc=new FaceLocation(neighbourX,neighbourY,neibhbourZ,neighborDir);
+										if((thisID!=0&&neighbourID==0)||(opaque[thisID]&&!opaque[neighbourID]))
+										{
+											FaceAttr obj=exposedFaces.get(thisLoc);
+											if(obj!=null)obj.blockID=thisID;
+											else exposedFaces.put(thisLoc,new FaceAttr(neighbourIllu,thisID,!opaque[thisID],thisIllu));
+										}
+										else
+										{
+											exposedFaces.remove(thisLoc);
+										}
+										if((neighbourID!=0&&thisID==0)||(opaque[neighbourID]&&!opaque[thisID]))
+										{
+											FaceAttr obj=exposedFaces.get(neighbourLoc);
+											if(obj!=null)obj.blockID=neighbourID;
+											else exposedFaces.put(neighbourLoc,new FaceAttr(thisIllu,neighbourID,!opaque[neighbourID],neighbourIllu));
+										}
+										else
+										{
+											exposedFaces.remove(neighbourLoc);
+										}
 									}
 								}
+								else if(_tmp_op instanceof UpdateIllumination)
+								{
+									UpdateIllumination op=(UpdateIllumination)_tmp_op;
+									for(Direction dir:Direction.values())
+									{
+										FaceAttr obj=exposedFaces.get(new FaceLocation(op.x,op.y,op.z,dir));
+										if(obj!=null)obj.innerIllumination=op.newIllumination;
+									}
+									for(Direction dir:Direction.values())
+									{
+										long x=op.x,y=op.y,z=op.z;
+										switch(dir)
+										{
+											case WEST:	x=x+1;if(x==xMax)x=xMin;break;
+											case EAST:	if(x==xMin)x=xMax;x=x-1;break;
+											case SOUTH:	y=y+1;if(y==yMax)y=yMin;break;
+											case NORTH:	if(y==yMin)y=yMax;y=y-1;break;
+											case DOWN:	z=z+1;if(z==zMax)z=zMin;break;
+											case UP:	if(z==zMin)z=zMax;z=z-1;break;
+										}
+										FaceAttr obj=exposedFaces.get(new FaceLocation(x,y,z,dir));
+										if(obj!=null)obj.illumination=op.newIllumination;
+									}
+								}
+								else{Log.e(LOG_TAG,"internal error: unknown op "+_tmp_op);}
 							}
-							else if(_tmp_op instanceof UpdateIllumination)
-							{
-								UpdateIllumination op=(UpdateIllumination)_tmp_op;
-								for(Direction dir:Direction.values())
-								{
-									FaceAttr obj=exposedFaces.get(new FaceLocation(op.x,op.y,op.z,dir));
-									if(obj!=null)obj.innerIllumination=op.newIllumination;
-								}
-								for(Direction dir:Direction.values())
-								{
-									long x=op.x,y=op.y,z=op.z;
-									switch(dir)
-									{
-										case WEST:	x=x+1;if(x==xMax)x=xMin;break;
-										case EAST:	if(x==xMin)x=xMax;x=x-1;break;
-										case SOUTH:	y=y+1;if(y==yMax)y=yMin;break;
-										case NORTH:	if(y==yMin)y=yMax;y=y-1;break;
-										case DOWN:	z=z+1;if(z==zMax)z=zMin;break;
-										case UP:	if(z==zMin)z=zMax;z=z-1;break;
-									}
-									FaceAttr obj=exposedFaces.get(new FaceLocation(x,y,z,dir));
-									if(obj!=null)obj.illumination=op.newIllumination;
-								}
-							}
-							else{Log.e(LOG_TAG,"internal error: unknown op "+_tmp_op);}
-						}
-						catch(RuntimeException e){Log.e(LOG_TAG,"internal error: cannot update face set with "+_tmp_op,e);}
-					}while(System.nanoTime()<deadline&&pendingOperationCount.tryAcquire(300,TimeUnit.MICROSECONDS));
-				}catch(InterruptedException ignored){}
+							catch(RuntimeException e){Log.e(LOG_TAG,"internal error: cannot update face set with "+_tmp_op,e);}
+						}while(System.nanoTime()<deadline&&pendingOperationCount.tryAcquire(300,TimeUnit.MICROSECONDS));
+					}catch(InterruptedException ignored){}
+				}
 				Log.i(LOG_TAG,"batch "+(this.counter++)+": "+counter+" ops, "+(total+=counter)+" ops total, currently "+exposedFaces.size()+" surfaces");
 				try
 				{

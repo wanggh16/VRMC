@@ -51,7 +51,7 @@ import cc.lym.util.Location;
  */
 
 public class HelloVrActivity extends GvrActivity {
-    public static final int WEST_LIMIT=0,EAST_LIMIT=300,SOUTH_LIMIT=0,NORTH_LIMIT=300,BOTTOM_LIMIT=0,TOP_LIMIT=300;
+    public static final int WEST_LIMIT=0,EAST_LIMIT=300,SOUTH_LIMIT=0,NORTH_LIMIT=300,BOTTOM_LIMIT=0,TOP_LIMIT=30;
     public static int wrapWE(int val){return ((val-WEST_LIMIT)%(EAST_LIMIT-WEST_LIMIT)+(EAST_LIMIT-WEST_LIMIT))%(EAST_LIMIT-WEST_LIMIT)+WEST_LIMIT;}
     public static int wrapSN(int val){return ((val-SOUTH_LIMIT)%(NORTH_LIMIT-SOUTH_LIMIT)+(NORTH_LIMIT-SOUTH_LIMIT))%(NORTH_LIMIT-SOUTH_LIMIT)+SOUTH_LIMIT;}
     public static int wrapDU(int val){return ((val-BOTTOM_LIMIT)%(TOP_LIMIT-BOTTOM_LIMIT)+(TOP_LIMIT-BOTTOM_LIMIT))%(TOP_LIMIT-BOTTOM_LIMIT)+BOTTOM_LIMIT;}
@@ -253,7 +253,11 @@ public class HelloVrActivity extends GvrActivity {
         }
         @Override public void run()
         {
+            setUncaughtExceptionHandler((thread,exception)->{Log.e(TAG,"uncaught",exception);throw new RuntimeException(exception);});
             sleep_(1000);
+            int ns_1=scene.get_scene_width_ns()-1;
+            int we_1=scene.get_scene_width_we()-1;
+            blockRenderer.init((x,y,z)->scene.scene[(int)z][(int)(ns_1-x)][(int)(we_1-y)],(x,y,z)->15,EAST_LIMIT-WEST_LIMIT,NORTH_LIMIT-SOUTH_LIMIT,TOP_LIMIT-BOTTOM_LIMIT);
             int counter=0;
             for(int i=0;i<scene.get_scene_height();i++){     //上下
                 for(int j=0;j<scene.get_scene_width_ns();j++){  //南北
