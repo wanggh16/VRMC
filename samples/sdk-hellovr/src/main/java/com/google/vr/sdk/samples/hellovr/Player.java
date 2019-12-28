@@ -17,7 +17,7 @@ public class Player extends Entity{
     private BlockRenderer blockRenderer;
     private final HandRenderer handRenderer;
     private boolean[] move; //记录移动方向的数组，长为4，每一位分别代表向前后左右移动
-    private float MOVE_SPEED=0.06f;
+    public float MOVE_SPEED=0.05f;
     private float HAND_REACH=4;
     public enum Direction{
         FORWARD,BACKWARD,LEFTWARD,RIGHTWARD
@@ -218,5 +218,15 @@ public class Player extends Entity{
         }
         if (havecross) return cross;
         else return null;
+    }
+
+    public boolean canPlaceBlock(int i, int j, int k){
+        Scene.Point block_center_pos_render=scene.transform_array_to_render(i, j, k);
+        if (Math.abs(block_center_pos_render.x - center_pos[0]) < box_x_half + 0.5
+                && Math.abs(block_center_pos_render.y - center_pos[1]) < box_y_half + 0.5
+                && center_pos[2] - block_center_pos_render.z < box_z_half_down + 0.5
+                && block_center_pos_render.z - center_pos[2] < box_z_half_up + 0.5)
+            return false;
+        return true;
     }
 }
