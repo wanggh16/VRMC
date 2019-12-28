@@ -51,7 +51,7 @@ import cc.lym.util.Util;
  */
 public class BlockRenderer implements HeadlessRenderer {
 	private final static String LOG_TAG="BlockRenderer";
-	private final static boolean DEBUG=false;
+	private final static boolean DEBUG=true;
 	
 	private enum Direction{UP,SOUTH,EAST,NORTH,WEST,DOWN}
 	private static class FaceLocation
@@ -252,10 +252,13 @@ public class BlockRenderer implements HeadlessRenderer {
 			pendingOperations.clear();
 			exposedFaces.clear();
 			Log.w(LOG_TAG,"init begin");
-			for(int i=0;i<xRange-1;i++)
-				for(int j=0;j<yRange-1;j++)
-					for(int k=0;k<zRange-1;k++)
+			for(int i=0;i<xRange;i++)
+				for(int j=0;j<yRange;j++)
+					for(int k=0;k<zRange;k++)
 					{
+						int i_1=i<xRange-1?i+1:0;
+						int j_1=j<yRange-1?j+1:0;
+						int k_1=k<zRange-1?k+1:0;
 						for(Direction thisDir:new Direction[]{Direction.EAST,Direction.NORTH,Direction.UP})
 						{
 							Direction neighborDir=null;
@@ -268,16 +271,16 @@ public class BlockRenderer implements HeadlessRenderer {
 							int neighbourID=-1,thisID=model.lookup(i,j,k);
 							switch(thisDir)
 							{
-								case UP:	neighbourID=model.lookup(i,j,k+1);break;
-								case EAST:	neighbourID=model.lookup(i+1,j,k);break;
-								case NORTH:	neighbourID=model.lookup(i,j+1,k);break;
+								case UP:	neighbourID=model.lookup(i,j,k_1);break;
+								case EAST:	neighbourID=model.lookup(i_1,j,k);break;
+								case NORTH:	neighbourID=model.lookup(i,j_1,k);break;
 							}
 							int neighbourIllu=illuMax,thisIllu=illumination.lookup(i,j,k);
 							switch(thisDir)
 							{
-								case EAST:	neighbourIllu=illumination.lookup(i+1,j,k);break;
-								case NORTH:	neighbourIllu=illumination.lookup(i,j+1,k);break;
-								case UP:	neighbourIllu=illumination.lookup(i,j,k+1);break;
+								case EAST:	neighbourIllu=illumination.lookup(i_1,j,k);break;
+								case NORTH:	neighbourIllu=illumination.lookup(i,j_1,k);break;
+								case UP:	neighbourIllu=illumination.lookup(i,j,k_1);break;
 							}
 							long neighbourX=i,neighbourY=j,neibhbourZ=k,thisX=i,thisY=j,thisZ=k;
 							switch(neighborDir)

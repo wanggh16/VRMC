@@ -122,7 +122,7 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         headRPY = new float[3];
-        player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{290,290,15}, headTransformProvider, blockRenderer, handRenderer, scene);
+        player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{290,290,55}, headTransformProvider, blockRenderer, handRenderer, scene);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
@@ -259,21 +259,8 @@ public class HelloVrActivity extends GvrActivity {
             int ns_1=scene.get_scene_width_ns()-1;
             int we_1=scene.get_scene_width_we()-1;
             blockRenderer.init((x,y,z)->scene.scene[(int)z][(int)(ns_1-x)][(int)(we_1-y)],(x,y,z)->15,EAST_LIMIT-WEST_LIMIT,NORTH_LIMIT-SOUTH_LIMIT,TOP_LIMIT-BOTTOM_LIMIT);
-            int counter=0;
-            for(int i=0;i<scene.get_scene_height();i++){     //上下
-                for(int j=0;j<scene.get_scene_width_ns();j++){  //南北
-                    if(i==0||i==scene.get_scene_height()-1||j==0||j==scene.get_scene_width_ns()-1)
-                    for(int k=0;k<scene.get_scene_width_we();k++) {  //东西
-                        counter = getCounter(counter, i, j, k);
-                    }
-                    else
-                    {
-                        counter = getCounter(counter, i, j, 0);
-                        counter = getCounter(counter, i, j, scene.get_scene_width_we()-1);
-                    }
-                }
-            }
-            Log.w(TAG,"scene inited with "+counter+" updates");
+
+            Log.w(TAG,"scene inited");
 
             //			blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
 //			blockRenderer.updateBlock(0,0,10,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
@@ -294,24 +281,6 @@ public class HelloVrActivity extends GvrActivity {
                 player.update_pos();
                 Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
             }
-        }
-    
-        private int getCounter(int counter, int i, int j, int k) {
-            int thisID=scene.get_id(i,j,k);
-            if(thisID==0) return counter;
-            int up =scene.get_neighbor_block_id(i,j,k, Scene.Position.UP);
-            int down =scene.get_neighbor_block_id(i,j,k, Scene.Position.DOWN);
-            int east =scene.get_neighbor_block_id(i,j,k, Scene.Position.EAST);
-            int west =scene.get_neighbor_block_id(i,j,k, Scene.Position.WEST);
-            int north =scene.get_neighbor_block_id(i,j,k, Scene.Position.NORTH);
-            int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
-            if(up!=thisID||down!=thisID||east!=thisID||west!=thisID||north!=thisID||south!=thisID)
-            {
-                counter++;
-                Scene.Point point=scene.transform_array_to_render(i,j,k);
-                blockRenderer.updateBlock((int)Math.round(point.x), (int)Math.round(point.y), (int)Math.round(point.z), thisID, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
-            }
-            return counter;
         }
     }
 }
