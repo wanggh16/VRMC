@@ -28,6 +28,9 @@ import com.google.vr.sdk.base.GvrActivity;
 import com.google.vr.sdk.base.GvrView;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import cc.lym.Renderer.BlockRenderer;
 import cc.lym.Renderer.HandRenderer;
@@ -50,6 +53,13 @@ import cc.lym.util.Location;
 public class HelloVrActivity extends GvrActivity {
     private static final String TAG = "HelloVrActivity";
     private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
+	private static final int[]AVAILABLE_BLOCKS={1,2,3,4,5,7,12,13,14,15,16,17,18,19,20,21,22,23,24,25,35,41,42,45,46,47,48,49,52,56,57,58,61,62};
+	private static final List<Integer>AVAILABLE_BLOCKS_LIST=new ArrayList<>();
+	static
+	{
+		for(int type:AVAILABLE_BLOCKS)
+			AVAILABLE_BLOCKS_LIST.add(type);
+	}
 
     private Scene scene;
 
@@ -170,7 +180,8 @@ public class HelloVrActivity extends GvrActivity {
         return true;
     }
     
-    private char blockInHand=2;
+	private Iterator<Integer>nextBlockType=AVAILABLE_BLOCKS_LIST.iterator();
+    private char blockInHand=(char)(int)nextBlockType.next();
     private void setBlock() {
         CrossPoint cross = player.get_facing_block();
         if (cross != null) {
@@ -186,6 +197,9 @@ public class HelloVrActivity extends GvrActivity {
                 player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, blockInHand);
             else if (cross.type == 5)
                 player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, blockInHand);
+            blockInHand=(char)(int)nextBlockType.next();
+            if(!nextBlockType.hasNext())
+            	nextBlockType=AVAILABLE_BLOCKS_LIST.iterator();
         }
     }
     
