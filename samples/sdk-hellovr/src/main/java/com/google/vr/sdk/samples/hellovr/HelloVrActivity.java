@@ -126,19 +126,27 @@ public class HelloVrActivity extends GvrActivity {
                 Log.i(TAG, "UP");
                 //player.jump();
                 if (cross != null){
-                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
-                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
-                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
-                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
+                    if (cross.type == 0 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk))
+                        player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)8);
+                    else if (cross.type == 1 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk))
+                        player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)8);
+                    else if (cross.type == 2 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1))
+                        player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)8);
+                    else if (cross.type == 3 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1))
+                        player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)8);
+                    else if (cross.type == 4 && player.canPlaceBlock(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk))
+                        player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)8);
+                    else if (cross.type == 5 && player.canPlaceBlock(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk))
+                        player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)8);
                 }
                 //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
                 if (cross != null) {
-                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+                    if (scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 3) {
+                        player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+                    }
                 }
                 //player.set_move_toward(Player.Direction.FORWARD);
         }
