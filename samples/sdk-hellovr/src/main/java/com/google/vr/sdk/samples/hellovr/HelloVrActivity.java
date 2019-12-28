@@ -128,21 +128,12 @@ public class HelloVrActivity extends GvrActivity {
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
                 //player.jump();
-                if (cross != null){
-                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
-                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
-                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
-                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
-                }
+                setBlock(cross,(char)2);
                 //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
-                if (cross != null) {
-                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
-                }
+                deleteBlock(cross);
                 //player.set_move_toward(Player.Direction.FORWARD);
         }
         return true;
@@ -168,24 +159,39 @@ public class HelloVrActivity extends GvrActivity {
                 player.set_move_toward(Player.Direction.RIGHTWARD);
                 break;
             case KeyEvent.KEYCODE_Z:
-                if (cross != null){
-                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
-                }
+                deleteBlock(cross);
                 break;
             case KeyEvent.KEYCODE_C:
-                if (cross != null){
-                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
-                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
-                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
-                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
-                }
+                setBlock(cross,(char)2);
                 break;
             default:
         }
         return true;
     }
+    
+    private void setBlock(CrossPoint cross, char type) {
+        if (cross != null) {
+            if (cross.type == 0)
+                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, type);
+            else if (cross.type == 1)
+                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, type);
+            else if (cross.type == 2)
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, type);
+            else if (cross.type == 3)
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, type);
+            else if (cross.type == 4)
+                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, type);
+            else if (cross.type == 5)
+                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, type);
+        }
+    }
+    
+    private void deleteBlock(CrossPoint cross) {
+        if (cross != null){
+            player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+        }
+    }
+    
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         switch (keyCode){
