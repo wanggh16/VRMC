@@ -50,7 +50,7 @@ import cc.lym.util.Util;
  */
 public class BlockRenderer implements HeadlessRenderer {
 	private final static String LOG_TAG="BlockRenderer";
-	private final static boolean DEBUG=true;
+	private final static boolean DEBUG=false;
 	
 	private enum Direction{UP,SOUTH,EAST,NORTH,WEST,DOWN}
 	private static class FaceLocation
@@ -341,17 +341,20 @@ public class BlockRenderer implements HeadlessRenderer {
 	
 	private class DaemonThread extends Thread
 	{
+		int counter=0;
 		@Override public void run()
 		{
 			while(true)
 			{
+				int counter=0;
 				pendingOperationCount.acquireUninterruptibly();
 				try
 				{
-					long deadline=System.nanoTime()+3000000;
+					long deadline=System.nanoTime()+15000000;
 					do
 					{
 						Op _tmp_op=pendingOperations.poll();
+						counter++;
 						try
 						{
 							if(_tmp_op instanceof UpdateBlock)
@@ -452,6 +455,7 @@ public class BlockRenderer implements HeadlessRenderer {
 						catch(RuntimeException e){Log.e(LOG_TAG,"internal error: cannot update face set with "+_tmp_op,e);}
 					}while(System.nanoTime()<deadline&&pendingOperationCount.tryAcquire(300,TimeUnit.MICROSECONDS));
 				}catch(InterruptedException ignored){}
+				Log.i(LOG_TAG,"batch "+(this.counter++)+": "+counter+" ops, currently "+exposedFaces.size()+" surfaces");
 				try
 				{
 					List<Integer>position=new ArrayList<>();

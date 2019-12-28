@@ -63,7 +63,7 @@ abstract public class Entity {
     //1：正方向碰撞；-1：负方向碰撞；0：不碰撞。下同
     public int collide_x(){
         for(int zz=(int)Math.ceil(center_pos[2]-box_z_half_down-BOX_HALF_WIDTH-0.001);zz<center_pos[2]+box_z_half_up+BOX_HALF_WIDTH;zz++) {
-            Log.i("collide", "zz:"+zz);
+//            Log.i("collide", "zz:"+zz);
             if (zz < 0 || zz >= scene.get_scene_height()) return 0;
             for (int yy = (int) Math.ceil(center_pos[1] - box_y_half - BOX_HALF_WIDTH - 0.001); yy < center_pos[1] + box_y_half + BOX_HALF_WIDTH; yy++) {
                 if (yy < 0 || yy >= scene.get_scene_width_we()) continue;
@@ -71,7 +71,7 @@ abstract public class Entity {
                 for (int i = first; i <= center_pos[0]; i++) {
                     if (i < 0 || i >= scene.get_scene_width_ns()) return 0;
                     if (scene.scene[zz][scene.get_scene_width_ns() - i - 1][scene.get_scene_width_we() - yy - 1] != 0) {
-                        Log.i("collide", "collide:x-");
+//                        Log.i("collide", "collide:x-");
                         //center_pos[0]=i+box_x_half+BOX_HALF_WIDTH+ALLOWANCE;
                         return -1;
                     }
@@ -80,7 +80,7 @@ abstract public class Entity {
                 for (int i = first; i >= center_pos[0]; i--) {
                     if (i < 0 || i >= scene.get_scene_width_ns()) return 0;
                     if (scene.scene[zz][scene.get_scene_width_ns() - i - 1][scene.get_scene_width_we() - yy - 1] != 0) {
-                        Log.i("collide", "collide:x+");
+//                        Log.i("collide", "collide:x+");
                         //center_pos[0]=i-box_x_half-BOX_HALF_WIDTH-ALLOWANCE;
                         return 1;
                     }
@@ -99,7 +99,7 @@ abstract public class Entity {
                 for (int i = first; i <= center_pos[1]; i++) {
                     if (i < 0 || i >= scene.get_scene_width_we()) return 0;
                     if (scene.scene[zz][scene.get_scene_width_ns() - xx - 1][scene.get_scene_width_we() - i - 1] != 0) {
-                        Log.i("collide", "collide:y-");
+//                        Log.i("collide", "collide:y-");
                         //center_pos[1]=i+box_y_half+BOX_HALF_WIDTH+ALLOWANCE;
                         return -1;
                     }
@@ -108,7 +108,7 @@ abstract public class Entity {
                 for (int i = first; i >= center_pos[1]; i--) {
                     if (i < 0 || i >= scene.get_scene_width_we()) return 0;
                     if (scene.scene[zz][scene.get_scene_width_ns() - xx - 1][scene.get_scene_width_we() - i - 1] != 0) {
-                        Log.i("collide", "collide:y+");
+//                        Log.i("collide", "collide:y+");
                         //center_pos[1]=i-box_y_half-BOX_HALF_WIDTH-ALLOWANCE;
                         return 1;
                     }

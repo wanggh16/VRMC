@@ -39,8 +39,8 @@ public class Player extends Entity{
         head.getForwardVector(headRPY,0);
         head.getRightVector(headRight,0);
         head.getUpVector(headUp,0);
-        Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
-        Log.i("hhh", "posx: "+center_pos[0]+", posy: "+center_pos[1]+", posz: "+center_pos[2]);
+//        Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
+//        Log.i("hhh", "posx: "+center_pos[0]+", posy: "+center_pos[1]+", posz: "+center_pos[2]);
         if(move[0]){
             speed[0] = -MOVE_SPEED * headRPY[2];
             speed[1] = -MOVE_SPEED * headRPY[0];

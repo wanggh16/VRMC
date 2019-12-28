@@ -232,8 +232,8 @@ public class Scene {
             }catch(IOException e){throw new RuntimeException(e);}
             for(int j=0;j<HelloVrActivity.NORTH_LIMIT-HelloVrActivity.SOUTH_LIMIT;j++)
             {
-                int stoneHeight=(int)(Float.parseFloat(tokenizer.nextToken())*20+50);
-                int dirtHeight=(int)(Float.parseFloat(tokenizer.nextToken())*30+60);
+                int stoneHeight=(int)(Float.parseFloat(tokenizer.nextToken())*4+1);
+                int dirtHeight=(int)(Float.parseFloat(tokenizer.nextToken())*3+3);
                 if(i>=this.scene[0].length||j>=this.scene[0][0].length)
                 {
                     for(int k=0;k<stoneHeight;k++)
