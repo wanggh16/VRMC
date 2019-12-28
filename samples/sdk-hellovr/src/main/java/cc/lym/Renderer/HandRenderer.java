@@ -72,7 +72,7 @@ public class HandRenderer implements HeadlessRenderer {
 			"" +
 			"void main()" +
 			"{" +
-			"	if(abs((v_UV.x)*(v_UV.y))>0.02)discard;" +
+			"	if(abs((v_UV.x)*(v_UV.y))>0.015)discard;" +
 			"	float fac=abs(u_norm.y);" +
 			"	if(fac<0.0)fac=0.0;" +
 			"	fac=fac+0.15;" +
@@ -86,6 +86,8 @@ public class HandRenderer implements HeadlessRenderer {
 	private int glParam_a_UV;
 	private int glParam_u_norm;
 	private final float[]headTrans=new float[16];
+	private float alpha=0,beta=0;
+	private float[]getAlphaBeta(){return new float[]{alpha,beta};}
 	
 	@Override
 	public void onNewFrame(HeadTransform headTransform)
@@ -97,7 +99,6 @@ public class HandRenderer implements HeadlessRenderer {
 	@Override
 	public void onDrawEye(Eye eye)
 	{
-		if(hand!=null&&hand.isPresent)
 		{
 			GLES31.glUseProgram(glProgram);
 			Renderer.checkGlError();
@@ -110,13 +111,23 @@ public class HandRenderer implements HeadlessRenderer {
 			Matrix.multiplyMM(head2eye,0,tmp,0,new float[]{-1,0,0,0,0,0,-1,0,0,-1,0,0,0,0,0,1},0);
 			float[]perspective=new float[16];
 			Matrix.multiplyMM(perspective,0,eye.getPerspective(0.05f,250.0f),0,head2eye,0);
-			float rightx=hand.palmNormY*hand.palmDirectionZ-hand.palmNormZ*hand.palmDirectionY;
-			float righty=hand.palmNormZ*hand.palmDirectionX-hand.palmNormX*hand.palmDirectionZ;
-			float rightz=hand.palmNormX*hand.palmDirectionY-hand.palmNormY*hand.palmDirectionX;
-			float[]center_right_forward=new float[]{hand.palmPosX,hand.palmPosY,hand.palmPosZ,rightx,righty,rightz,hand.palmDirectionX,hand.palmDirectionY,hand.palmDirectionZ};
-			
-			float[]norm=new float[]{(float)Math.exp((System.nanoTime()-lastGet)/-3e8),hand.palmNormY,(float)Math.exp((System.nanoTime()-lastPut)/-3e8),open?1:0};
-			
+			float[]center_right_forward,norm;
+			if(hand!=null&&hand.isPresent)
+			{
+				float rightx=hand.palmNormY*hand.palmDirectionZ-hand.palmNormZ*hand.palmDirectionY;
+				float righty=hand.palmNormZ*hand.palmDirectionX-hand.palmNormX*hand.palmDirectionZ;
+				float rightz=hand.palmNormX*hand.palmDirectionY-hand.palmNormY*hand.palmDirectionX;
+				center_right_forward=new float[]{hand.palmPosX,hand.palmPosY,hand.palmPosZ,rightx,righty,rightz,hand.palmDirectionX,hand.palmDirectionY,hand.palmDirectionZ};
+				
+				norm=new float[]{(float)Math.exp((System.nanoTime()-lastGet)/-3e8),hand.palmNormY,(float)Math.exp((System.nanoTime()-lastPut)/-3e8),open?1:0};
+			}
+			else
+			{
+				center_right_forward=new float[]{0,200,0,-1,0,0,0,0,-1};
+				norm=new float[]{0,1,0,0};
+			}
+			alpha=-center_right_forward[0]/center_right_forward[1];
+			beta=-center_right_forward[2]/center_right_forward[1];
 			GLES31.glUniformMatrix4fv(glParam_u_transform,1,false,perspective,0);
 			GLES31.glUniformMatrix3fv(glParam_u_center_right_forward,1,false,center_right_forward,0);
 			GLES31.glUniform4fv(glParam_u_norm,1,norm,0);
