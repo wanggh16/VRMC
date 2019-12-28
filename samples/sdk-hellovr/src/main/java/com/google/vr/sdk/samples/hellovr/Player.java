@@ -7,13 +7,15 @@ import java.util.List;
 import java.util.Collections;
 
 import cc.lym.Renderer.BlockRenderer;
+import cc.lym.Renderer.HandRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 
 public class Player extends Entity{
 
-    private float[] headRPY;
+    private float[] headRPY,headRight,headUp;
     private HeadTransformProvider head;
     private BlockRenderer blockRenderer;
+    private final HandRenderer handRenderer;
     private boolean[] move; //记录移动方向的数组，长为4，每一位分别代表向前后左右移动
     private float MOVE_SPEED=0.06f;
     private float HAND_REACH=4;
@@ -21,17 +23,22 @@ public class Player extends Entity{
         FORWARD,BACKWARD,LEFTWARD,RIGHTWARD
     }
 
-    public Player(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up, float[] center_pos, HeadTransformProvider head, BlockRenderer blockRenderer,Scene scene) {
+    public Player(float box_x_half, float box_y_half, float box_z_half_down, float box_z_half_up, float[] center_pos, HeadTransformProvider head, BlockRenderer blockRenderer, HandRenderer handRenderer, Scene scene) {
         super(box_x_half, box_y_half, box_z_half_down, box_z_half_up, center_pos, scene);
         this.move=new boolean[]{false,false,false,false};
         this.head=head;
         this.blockRenderer=blockRenderer;
+        this.handRenderer=handRenderer;
         this.headRPY=new float[3];
+        this.headRight=new float[3];
+        this.headUp=new float[3];
     }
 
     @Override
     public void set_next_action() {
         head.getForwardVector(headRPY,0);
+        head.getRightVector(headRight,0);
+        head.getUpVector(headUp,0);
         Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
         Log.i("hhh", "posx: "+center_pos[0]+", posy: "+center_pos[1]+", posz: "+center_pos[2]);
         if(move[0]){
@@ -109,7 +116,11 @@ public class Player extends Entity{
     }
 
     public CrossPoint get_facing_block(){
-        Scene.Point forward_v = scene.transform_sdk_to_render(headRPY[0],headRPY[1],headRPY[2]);
+        float[]alphaBeta=handRenderer.getAlphaBeta();
+        float[]pointingDirection=new float[3];
+        for(int i=0;i<3;i++)
+            pointingDirection[i]=headRPY[i]+headRight[i]*alphaBeta[0]+headUp[i]*alphaBeta[1];
+        Scene.Point forward_v = scene.transform_sdk_to_render(pointingDirection[0],pointingDirection[1],pointingDirection[2]);
         Log.i("forward_v", "x: "+forward_v.x+"y: "+forward_v.y+"z: "+forward_v.z);
         if (forward_v.x == 0) forward_v.x = 1e-6f;
         if (forward_v.y == 0) forward_v.y = 1e-6f;
