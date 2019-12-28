@@ -9,10 +9,10 @@ import com.google.vr.sdk.base.GvrView;
 import com.google.vr.sdk.base.HeadTransform;
 import com.google.vr.sdk.base.Viewport;
 
+import javax.microedition.khronos.egl.EGLConfig;
+
 import cc.lym.util.BiConsumer;
 import cc.lym.util.Consumer;
-
-import javax.microedition.khronos.egl.EGLConfig;
 
 /**
  * Usage:

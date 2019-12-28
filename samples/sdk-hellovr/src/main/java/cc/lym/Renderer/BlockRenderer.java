@@ -24,11 +24,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import javax.microedition.khronos.egl.EGLConfig;
+
 import cc.lym.util.Location;
 import cc.lym.util.Supplier;
 import cc.lym.util.Util;
-
-import javax.microedition.khronos.egl.EGLConfig;
 
 /**
  * Renderer that renders blocks.

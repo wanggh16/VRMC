@@ -7,10 +7,50 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LeapReceiver
 {
+	static
+	{
+		new ForwardingThread().start();
+	}
+	private static final AtomicInteger next_port =new AtomicInteger(29475+1);
+	private static class ForwardingThread extends Thread
+	{
+		@Override public void run()
+		{
+			try
+			{
+				DatagramSocket sock=new DatagramSocket(29475);
+				sock.setSoTimeout(0);
+				byte[]buffer=new byte[2048];
+				DatagramPacket packet=new DatagramPacket(buffer,buffer.length);
+				while(true)
+				{
+					try
+					{
+						int len;
+						do
+						{
+							sock.receive(packet);
+							len=packet.getLength();
+							if(len!=78)
+								Log.w(LOG_TAG,"forwarder: corrupted packet, try again");
+						}while(len!=78);
+						for(int i = next_port.get()-1; i>29475; i--)
+						{
+							packet.setAddress(InetAddress.getLoopbackAddress());
+							packet.setPort(i);
+							sock.send(packet);
+						}
+					}catch(IOException e){Log.e(LOG_TAG,"",e);}
+				}
+			}catch(SocketException e){Log.e(LOG_TAG,"",e);}
+		}
+	}
 	private final static String LOG_TAG="LeapReceiver";
 	
 	private final Runnable onGet;
@@ -22,6 +62,7 @@ public class LeapReceiver
 	private Hand lasthand=null;
 	public static class Location{public final double x,y,z;Location(double x,double y,double z){this.x=x;this.y=y;this.z=z;}}
 	public synchronized Location queryPosition(){return loc;}
+	public synchronized Hand getHand(){return new Hand(lasthand);}
 	public LeapReceiver(Runnable onGet,Runnable onPut,Runnable onOpenMenu,Runnable onCloseMenu)
 	{
 		this.onGet=onGet;this.onPut=onPut;this.onOpenMenu=onOpenMenu;this.onCloseMenu=onCloseMenu;
@@ -34,7 +75,7 @@ public class LeapReceiver
 		{
 			try
 			{
-				DatagramSocket sock=new DatagramSocket(29475);
+				DatagramSocket sock=new DatagramSocket(next_port.getAndAdd(1));
 				sock.setSoTimeout(0);
 				byte[]buffer=new byte[2048];
 				DatagramPacket packet=new DatagramPacket(buffer,buffer.length);
@@ -88,7 +129,7 @@ public class LeapReceiver
 							if(hand.isPresent)
 							{
 								float dot=hand.palmPosX*hand.palmNormX+hand.palmPosY*hand.palmNormY+hand.palmPosZ*hand.palmNormZ;
-								dot=dot*dot/(hand.palmPosX*hand.palmPosX+hand.palmPosY*hand.palmPosY+hand.palmPosZ*hand.palmPosZ);
+								dot=dot*Math.abs(dot)/(hand.palmPosX*hand.palmPosX+hand.palmPosY*hand.palmPosY+hand.palmPosZ*hand.palmPosZ);
 								if(dot>0.6||(lastForward&&dot>0.3))
 								{
 									forward=true;

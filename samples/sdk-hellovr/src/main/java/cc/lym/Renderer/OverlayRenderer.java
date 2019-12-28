@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLES31;
 import android.opengl.GLUtils;
-import android.opengl.Matrix;
 import android.util.Log;
 
 import com.google.vr.sdk.base.Eye;
