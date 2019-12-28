@@ -1,5 +1,11 @@
 package com.google.vr.sdk.samples.hellovr;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.StringTokenizer;
+
 public class Scene {
     public char[][][] scene = {
             {   //0层
@@ -213,14 +219,28 @@ public class Scene {
             },
     };
     
-    Scene()
+    Scene(InputStream in)
     {
+        BufferedReader reader=new BufferedReader(new InputStreamReader(in));
         char[][][]scene=new char[HelloVrActivity.TOP_LIMIT-HelloVrActivity.BOTTOM_LIMIT][HelloVrActivity.EAST_LIMIT-HelloVrActivity.WEST_LIMIT][HelloVrActivity.NORTH_LIMIT-HelloVrActivity.SOUTH_LIMIT];
-        for(int i=0;i<this.scene.length;i++)
-            for(int j=0;j<this.scene[i].length;j++)
-                for(int k=0;k<this.scene[i][j].length;k++)
-                    scene[i][j][k]=this.scene[i][j][k];
-        this.scene=scene;
+        for(int i=0;i<HelloVrActivity.EAST_LIMIT-HelloVrActivity.WEST_LIMIT;i++)
+        {
+            StringTokenizer tokenizer;
+            try
+            {
+                tokenizer=new StringTokenizer(reader.readLine());
+            }catch(IOException e){throw new RuntimeException(e);}
+            for(int j=0;j<HelloVrActivity.NORTH_LIMIT-HelloVrActivity.SOUTH_LIMIT;j++)
+            {
+                int stoneHeight=(int)(Float.parseFloat(tokenizer.nextToken())*20+50);
+                int dirtHeight=(int)(Float.parseFloat(tokenizer.nextToken())*30+60);
+                for(int k=0;k<stoneHeight;k++)
+                    scene[k][i][j]=1;
+                for(int k=stoneHeight;k<dirtHeight;k++)
+                    scene[k][i][j]=10;
+                scene[dirtHeight][i][j]=2;
+            }
+        }
     }
 
     enum Position{

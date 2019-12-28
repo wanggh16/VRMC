@@ -13,3 +13,5 @@ local.properties
 
 # OS configurations.
 .DS_Store
+
+scene_data.txt
