@@ -28,11 +28,16 @@ import com.google.vr.sdk.base.GvrActivity;
 import com.google.vr.sdk.base.GvrView;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import cc.lym.Renderer.BlockRenderer;
+import cc.lym.Renderer.HandRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 import cc.lym.Renderer.OverlayRenderer;
 import cc.lym.Renderer.Renderer;
+import cc.lym.leap.LeapReceiver;
 import cc.lym.util.Location;
 
 /**
@@ -48,6 +53,13 @@ import cc.lym.util.Location;
 public class HelloVrActivity extends GvrActivity {
     private static final String TAG = "HelloVrActivity";
     private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
+	private static final int[]AVAILABLE_BLOCKS={1,2,3,4,5,7,12,13,14,15,16,17,18,19,20,21,22,23,24,25,35,41,42,45,46,47,48,49,52,56,57,58,61,62};
+	private static final List<Integer>AVAILABLE_BLOCKS_LIST=new ArrayList<>();
+	static
+	{
+		for(int type:AVAILABLE_BLOCKS)
+			AVAILABLE_BLOCKS_LIST.add(type);
+	}
 
     private Scene scene;
 
@@ -56,7 +68,9 @@ public class HelloVrActivity extends GvrActivity {
 
     BlockRenderer blockRenderer;
     HeadTransformProvider headTransformProvider;
+    HandRenderer handRenderer;
     OverlayRenderer overlayRenderer;
+    LeapReceiver leapReceiver;
     Bitmap overlay;
 
 
@@ -86,6 +100,7 @@ public class HelloVrActivity extends GvrActivity {
             GvrView.StereoRenderer renderer= Renderer.base()
                     .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
                     .andThen(headTransformProvider=new HeadTransformProvider())
+                    .andThen(handRenderer=new HandRenderer())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png"))));
             gvrView.setRenderer(renderer);
         }catch(IOException ignored){}
@@ -100,8 +115,9 @@ public class HelloVrActivity extends GvrActivity {
 
         headRPY = new float[3];
         scene=new Scene();
-        player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, scene);
+        player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, handRenderer, scene);
 
+        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
 
     @Override
@@ -120,26 +136,16 @@ public class HelloVrActivity extends GvrActivity {
      */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        CrossPoint cross = player.get_facing_block();
         switch (event.getAction()){
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
                 //player.jump();
-                if (cross != null){
-                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
-                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
-                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
-                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
-                }
+                setBlock();
                 //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
-                if (cross != null) {
-                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
-                }
+                deleteBlock();
                 //player.set_move_toward(Player.Direction.FORWARD);
         }
         return true;
@@ -147,7 +153,6 @@ public class HelloVrActivity extends GvrActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         Log.i("keycode", String.valueOf(keyCode));
-        CrossPoint cross = player.get_facing_block();
         switch (keyCode){
             case KeyEvent.KEYCODE_X:
                 player.jump();
@@ -165,24 +170,46 @@ public class HelloVrActivity extends GvrActivity {
                 player.set_move_toward(Player.Direction.RIGHTWARD);
                 break;
             case KeyEvent.KEYCODE_Z:
-                if (cross != null){
-                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
-                }
+                deleteBlock();
                 break;
             case KeyEvent.KEYCODE_C:
-                if (cross != null){
-                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
-                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
-                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
-                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
-                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
-                }
+                setBlock();
                 break;
             default:
         }
         return true;
     }
+    
+	private Iterator<Integer>nextBlockType=AVAILABLE_BLOCKS_LIST.iterator();
+    private char blockInHand=(char)(int)nextBlockType.next();
+    private void setBlock() {
+        CrossPoint cross = player.get_facing_block();
+        if (cross != null) {
+            if (cross.type == 0)
+                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, blockInHand);
+            else if (cross.type == 1)
+                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, blockInHand);
+            else if (cross.type == 2)
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, blockInHand);
+            else if (cross.type == 3)
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, blockInHand);
+            else if (cross.type == 4)
+                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, blockInHand);
+            else if (cross.type == 5)
+                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, blockInHand);
+            blockInHand=(char)(int)nextBlockType.next();
+            if(!nextBlockType.hasNext())
+            	nextBlockType=AVAILABLE_BLOCKS_LIST.iterator();
+        }
+    }
+    
+    private void deleteBlock() {
+        CrossPoint cross = player.get_facing_block();
+        if (cross != null){
+            player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+        }
+    }
+    
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         switch (keyCode){

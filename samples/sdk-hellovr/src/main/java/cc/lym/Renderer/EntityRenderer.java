@@ -293,13 +293,9 @@ public class EntityRenderer implements HeadlessRenderer {
 		float[]perspective=new float[16];
 		Matrix.multiplyMM(perspective,0,eye.getPerspective(0.05f,250.0f),0,head2eye,0);
 		
-		Renderer.checkGlError();
 		GLES31.glUniformMatrix4fv(glParam_u_transform,1,false,perspective,0);
-		Renderer.checkGlError();
 		GLES31.glUniform3fv(glParam_u_LowerBound,1,lowerBound,0);
-		Renderer.checkGlError();
 		GLES31.glUniform3fv(glParam_u_SceneSize,1,sceneSize,0);
-		Renderer.checkGlError();
 		GLES31.glUniform1f(glParam_u_param0,System.nanoTime());
 		Renderer.checkGlError();
 		GLES31.glEnableVertexAttribArray(glParam_a_UV);
