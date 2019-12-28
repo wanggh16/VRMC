@@ -254,6 +254,7 @@ public class HelloVrActivity extends GvrActivity {
         @Override public void run()
         {
             sleep_(1000);
+            int counter=0;
             for(int i=0;i<scene.get_scene_height();i++){     //上下
                 for(int j=0;j<scene.get_scene_width_ns();j++){  //南北
                     for(int k=0;k<scene.get_scene_width_we();k++) {  //东西
@@ -267,13 +268,14 @@ public class HelloVrActivity extends GvrActivity {
                         int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
                         if(up!=thisID||down!=thisID||east!=thisID||west!=thisID||north!=thisID||south!=thisID)
 						{
+						    counter++;
 							Scene.Point point=scene.transform_array_to_render(i,j,k);
 							blockRenderer.updateBlock((int)Math.round(point.x), (int)Math.round(point.y), (int)Math.round(point.z), thisID, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
                         }
                     }
                 }
             }
-            Log.w(TAG,"scene inited");
+            Log.w(TAG,"scene inited with "+counter+" updates");
 
             //			blockRenderer.updateBlock(0,0,-10,2,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});
 //			blockRenderer.updateBlock(0,0,10,1,new int[]{0,0,2,0,0,2},new int[][][]{{{15,15,15},{15,5,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}},{{15,15,15},{15,15,15},{15,15,15}}});

@@ -341,7 +341,7 @@ public class BlockRenderer implements HeadlessRenderer {
 	
 	private class DaemonThread extends Thread
 	{
-		int counter=0;
+		int counter=0,total=0;
 		@Override public void run()
 		{
 			while(true)
@@ -455,7 +455,7 @@ public class BlockRenderer implements HeadlessRenderer {
 						catch(RuntimeException e){Log.e(LOG_TAG,"internal error: cannot update face set with "+_tmp_op,e);}
 					}while(System.nanoTime()<deadline&&pendingOperationCount.tryAcquire(300,TimeUnit.MICROSECONDS));
 				}catch(InterruptedException ignored){}
-				Log.i(LOG_TAG,"batch "+(this.counter++)+": "+counter+" ops, currently "+exposedFaces.size()+" surfaces");
+				Log.i(LOG_TAG,"batch "+(this.counter++)+": "+counter+" ops, "+(total+=counter)+" ops total, currently "+exposedFaces.size()+" surfaces");
 				try
 				{
 					List<Integer>position=new ArrayList<>();
