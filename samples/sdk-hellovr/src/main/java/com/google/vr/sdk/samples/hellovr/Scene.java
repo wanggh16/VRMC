@@ -234,13 +234,22 @@ public class Scene {
             {
                 int stoneHeight=(int)(Float.parseFloat(tokenizer.nextToken())*20+50);
                 int dirtHeight=(int)(Float.parseFloat(tokenizer.nextToken())*30+60);
-                for(int k=0;k<stoneHeight;k++)
-                    scene[k][i][j]=1;
-                for(int k=stoneHeight;k<dirtHeight;k++)
-                    scene[k][i][j]=10;
-                scene[dirtHeight][i][j]=2;
+                if(i>=this.scene[0].length||j>=this.scene[0][0].length)
+                {
+                    for(int k=0;k<stoneHeight;k++)
+                        scene[k][i][j]=1;
+                    for(int k=stoneHeight;k<dirtHeight;k++)
+                        scene[k][i][j]=10;
+                    scene[dirtHeight][i][j]=2;
+                }
+                else
+                {
+                    for(int k=0;k<this.scene.length;k++)
+                        scene[k][i][j]=this.scene[k][i][j];
+                }
             }
         }
+        this.scene=scene;
     }
 
     enum Position{

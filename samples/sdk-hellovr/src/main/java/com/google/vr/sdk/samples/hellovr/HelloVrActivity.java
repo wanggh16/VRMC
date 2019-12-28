@@ -115,13 +115,13 @@ public class HelloVrActivity extends GvrActivity {
             AndroidCompat.setSustainedPerformanceMode(this, true);
         }
         setGvrView(gvrView);
-        new SceneModifier().start();
-
-        headRPY = new float[3];
         try
         {
             scene=new Scene(getAssets().open("scene_data.txt"));
         }catch(IOException e){throw new RuntimeException(e);}
+        new SceneModifier().start();
+
+        headRPY = new float[3];
         player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{4,4,5}, headTransformProvider, blockRenderer, handRenderer, scene);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
