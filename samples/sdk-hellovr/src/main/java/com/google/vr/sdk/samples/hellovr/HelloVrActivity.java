@@ -53,7 +53,7 @@ import cc.lym.util.Location;
 public class HelloVrActivity extends GvrActivity {
     private static final String TAG = "HelloVrActivity";
     private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
-	private static final int[]AVAILABLE_BLOCKS={1,2,3,4,5,7,12,13,14,15,16,17,18,19,20,21,22,23,24,25,35,41,42,45,46,47,48,49,52,56,57,58,61,62};
+	private static final int[]AVAILABLE_BLOCKS={1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30};
 	private static final List<Integer>AVAILABLE_BLOCKS_LIST=new ArrayList<>();
 	static
 	{
@@ -115,7 +115,7 @@ public class HelloVrActivity extends GvrActivity {
 
         headRPY = new float[3];
         scene=new Scene();
-        player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, handRenderer, scene);
+        player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{4,4,5}, headTransformProvider, blockRenderer, handRenderer, scene);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
@@ -175,6 +175,9 @@ public class HelloVrActivity extends GvrActivity {
             case KeyEvent.KEYCODE_C:
                 setBlock();
                 break;
+            case KeyEvent.KEYCODE_Q:
+                player.MOVE_SPEED = 0.10f;
+                break;
             default:
         }
         return true;
@@ -185,17 +188,17 @@ public class HelloVrActivity extends GvrActivity {
     private void setBlock() {
         CrossPoint cross = player.get_facing_block();
         if (cross != null) {
-            if (cross.type == 0)
+            if (cross.type == 0 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk))
                 player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, blockInHand);
-            else if (cross.type == 1)
+            else if (cross.type == 1 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk))
                 player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, blockInHand);
-            else if (cross.type == 2)
+            else if (cross.type == 2 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1))
                 player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, blockInHand);
-            else if (cross.type == 3)
+            else if (cross.type == 3 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1))
                 player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, blockInHand);
-            else if (cross.type == 4)
+            else if (cross.type == 4 && player.canPlaceBlock(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk))
                 player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, blockInHand);
-            else if (cross.type == 5)
+            else if (cross.type == 5 && player.canPlaceBlock(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk))
                 player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, blockInHand);
             blockInHand=(char)(int)nextBlockType.next();
             if(!nextBlockType.hasNext())
@@ -205,7 +208,8 @@ public class HelloVrActivity extends GvrActivity {
     
     private void deleteBlock() {
         CrossPoint cross = player.get_facing_block();
-        if (cross != null){
+        if (cross != null && scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 3
+                && scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 31){
             player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
         }
     }
@@ -225,13 +229,13 @@ public class HelloVrActivity extends GvrActivity {
             case KeyEvent.KEYCODE_D:
                 player.stop_move_toward(Player.Direction.RIGHTWARD);
                 break;
+            case KeyEvent.KEYCODE_Q:
+                player.MOVE_SPEED = 0.05f;
+                break;
             default:
         }
         return true;
     }
-
-
-
 
 
     class SceneModifier extends Thread
