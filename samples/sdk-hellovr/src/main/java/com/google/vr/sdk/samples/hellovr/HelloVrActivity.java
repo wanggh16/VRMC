@@ -51,7 +51,7 @@ import cc.lym.util.Location;
  */
 
 public class HelloVrActivity extends GvrActivity {
-    public static final int WEST_LIMIT=0,EAST_LIMIT=300,SOUTH_LIMIT=0,NORTH_LIMIT=300,BOTTOM_LIMIT=0,TOP_LIMIT=30;
+    public static final int WEST_LIMIT=0,EAST_LIMIT=20,SOUTH_LIMIT=0,NORTH_LIMIT=50,BOTTOM_LIMIT=0,TOP_LIMIT=30;
     public static int wrapWE(int val){return ((val-WEST_LIMIT)%(EAST_LIMIT-WEST_LIMIT)+(EAST_LIMIT-WEST_LIMIT))%(EAST_LIMIT-WEST_LIMIT)+WEST_LIMIT;}
     public static int wrapSN(int val){return ((val-SOUTH_LIMIT)%(NORTH_LIMIT-SOUTH_LIMIT)+(NORTH_LIMIT-SOUTH_LIMIT))%(NORTH_LIMIT-SOUTH_LIMIT)+SOUTH_LIMIT;}
     public static int wrapDU(int val){return ((val-BOTTOM_LIMIT)%(TOP_LIMIT-BOTTOM_LIMIT)+(TOP_LIMIT-BOTTOM_LIMIT))%(TOP_LIMIT-BOTTOM_LIMIT)+BOTTOM_LIMIT;}
@@ -122,7 +122,7 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         headRPY = new float[3];
-        player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{290,290,55}, headTransformProvider, blockRenderer, handRenderer, scene);
+        player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{15,45,55}, headTransformProvider, blockRenderer, handRenderer, scene);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }

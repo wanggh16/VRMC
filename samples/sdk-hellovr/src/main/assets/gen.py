@@ -2,7 +2,7 @@ import numpy
 from random import random
 from math import exp
 
-N=300
+N=50
 f=open('scene_data.txt','w')
 
 A=numpy.array([[random() for i in range(N)] for j in range(N)])
