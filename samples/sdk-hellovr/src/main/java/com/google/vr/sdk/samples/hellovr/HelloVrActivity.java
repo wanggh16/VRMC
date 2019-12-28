@@ -51,6 +51,10 @@ import cc.lym.util.Location;
  */
 
 public class HelloVrActivity extends GvrActivity {
+    public static final int WEST_LIMIT=0,EAST_LIMIT=17,SOUTH_LIMIT=0,NORTH_LIMIT=17,BOTTOM_LIMIT=0,TOP_LIMIT=20;
+    public static int wrapWE(int val){return ((val-WEST_LIMIT)%(EAST_LIMIT-WEST_LIMIT)+(EAST_LIMIT-WEST_LIMIT))%(EAST_LIMIT-WEST_LIMIT)+WEST_LIMIT;}
+    public static int wrapSN(int val){return ((val-SOUTH_LIMIT)%(NORTH_LIMIT-SOUTH_LIMIT)+(NORTH_LIMIT-SOUTH_LIMIT))%(NORTH_LIMIT-SOUTH_LIMIT)+SOUTH_LIMIT;}
+    public static int wrapDU(int val){return ((val-BOTTOM_LIMIT)%(TOP_LIMIT-BOTTOM_LIMIT)+(TOP_LIMIT-BOTTOM_LIMIT))%(TOP_LIMIT-BOTTOM_LIMIT)+BOTTOM_LIMIT;}
     private static final String TAG = "HelloVrActivity";
     private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
 	private static final int[]AVAILABLE_BLOCKS={1,2,3,4,5,7,12,13,14,15,16,17,18,19,20,21,22,23,24,25,35,41,42,45,46,47,48,49,52,56,57,58,61,62};
@@ -98,7 +102,7 @@ public class HelloVrActivity extends GvrActivity {
         }catch(IOException e){throw new RuntimeException("IOException",e);}
         try{
             GvrView.StereoRenderer renderer= Renderer.base()
-                    .andThen(blockRenderer=new BlockRenderer(-15,15,-15,15,-15,15,0,15,()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
+                    .andThen(blockRenderer=new BlockRenderer(WEST_LIMIT,EAST_LIMIT,SOUTH_LIMIT,NORTH_LIMIT,BOTTOM_LIMIT,TOP_LIMIT,0,15,()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
                     .andThen(headTransformProvider=new HeadTransformProvider())
                     .andThen(handRenderer=new HandRenderer())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png"))));

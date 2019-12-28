@@ -111,7 +111,7 @@ public class Player extends Entity{
         int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
         Scene.Point block_center_pos_render=scene.transform_array_to_render(i, j, k);
         blockRenderer.updateBlock(Math.round(block_center_pos_render.x),Math.round(block_center_pos_render.y),Math.round(block_center_pos_render.z),blockid, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
-        scene.scene[i][j][k]=blockid;
+        scene.scene[HelloVrActivity.wrapDU(i)][HelloVrActivity.wrapWE(j)][HelloVrActivity.wrapSN(k)]=blockid;
         Log.i("xyz", "x: "+block_center_pos_render.x+"y: "+block_center_pos_render.y+"z: "+block_center_pos_render.z);
     }
 
@@ -130,7 +130,7 @@ public class Player extends Entity{
         int i=(int)Math.round(block_curr.x);
         int j=(int)Math.round(block_curr.y);
         int k=(int)Math.round(block_curr.z);
-        if (scene.scene[i][j][k] != 0) return new CrossPoint(0, 6, i, j, k);
+        if (scene.scene[HelloVrActivity.wrapDU(i)][HelloVrActivity.wrapWE(j)][HelloVrActivity.wrapSN(k)] != 0) return new CrossPoint(0, 6, i, j, k);
         Log.i("cross", "i"+i+"j"+j+"k"+k);
         if (forward_v.x > 0){
             double dist = (Math.round(center_pos[0]) + 0.5f - center_pos[0])/forward_v.x;
@@ -209,7 +209,7 @@ public class Player extends Entity{
                     && cross.nextblockj >= 0 && cross.nextblockj < scene.get_scene_width_ns()
                     && cross.nextblockk >= 0 && cross.nextblockk < scene.get_scene_width_we()) {
                 Log.i("cross", "valid");
-                if (scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 0) {
+                if (scene.scene[HelloVrActivity.wrapDU(cross.nextblocki)][HelloVrActivity.wrapWE(cross.nextblockj)][HelloVrActivity.wrapSN(cross.nextblockk)] != 0) {
                     havecross = true;
                     Log.i("cross", "dist:" + cross.dist + "i:" + cross.nextblocki + "j:" + cross.nextblockj + "k:" + cross.nextblockk + "type:" + cross.type);
                     break;
