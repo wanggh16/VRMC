@@ -34,6 +34,7 @@ import cc.lym.Renderer.HandRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 import cc.lym.Renderer.OverlayRenderer;
 import cc.lym.Renderer.Renderer;
+import cc.lym.leap.LeapReceiver;
 import cc.lym.util.Location;
 
 /**
@@ -59,6 +60,7 @@ public class HelloVrActivity extends GvrActivity {
     HeadTransformProvider headTransformProvider;
     HandRenderer handRenderer;
     OverlayRenderer overlayRenderer;
+    LeapReceiver leapReceiver;
     Bitmap overlay;
 
 
@@ -105,6 +107,7 @@ public class HelloVrActivity extends GvrActivity {
         scene=new Scene();
         player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, handRenderer, scene);
 
+        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
 
     @Override
@@ -123,17 +126,16 @@ public class HelloVrActivity extends GvrActivity {
      */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        CrossPoint cross = player.get_facing_block();
         switch (event.getAction()){
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
                 //player.jump();
-                setBlock(cross,(char)2);
+                setBlock();
                 //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
-                deleteBlock(cross);
+                deleteBlock();
                 //player.set_move_toward(Player.Direction.FORWARD);
         }
         return true;
@@ -141,7 +143,6 @@ public class HelloVrActivity extends GvrActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         Log.i("keycode", String.valueOf(keyCode));
-        CrossPoint cross = player.get_facing_block();
         switch (keyCode){
             case KeyEvent.KEYCODE_X:
                 player.jump();
@@ -159,34 +160,37 @@ public class HelloVrActivity extends GvrActivity {
                 player.set_move_toward(Player.Direction.RIGHTWARD);
                 break;
             case KeyEvent.KEYCODE_Z:
-                deleteBlock(cross);
+                deleteBlock();
                 break;
             case KeyEvent.KEYCODE_C:
-                setBlock(cross,(char)2);
+                setBlock();
                 break;
             default:
         }
         return true;
     }
     
-    private void setBlock(CrossPoint cross, char type) {
+    private char blockInHand=2;
+    private void setBlock() {
+        CrossPoint cross = player.get_facing_block();
         if (cross != null) {
             if (cross.type == 0)
-                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, type);
+                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, blockInHand);
             else if (cross.type == 1)
-                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, type);
+                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, blockInHand);
             else if (cross.type == 2)
-                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, type);
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, blockInHand);
             else if (cross.type == 3)
-                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, type);
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, blockInHand);
             else if (cross.type == 4)
-                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, type);
+                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, blockInHand);
             else if (cross.type == 5)
-                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, type);
+                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, blockInHand);
         }
     }
     
-    private void deleteBlock(CrossPoint cross) {
+    private void deleteBlock() {
+        CrossPoint cross = player.get_facing_block();
         if (cross != null){
             player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
         }
