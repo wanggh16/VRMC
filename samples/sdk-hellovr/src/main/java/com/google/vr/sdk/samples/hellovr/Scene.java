@@ -87,7 +87,7 @@ public class Scene {
                     {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
                     {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
                     {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
-                    {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
+                    {0,1,0,0,0,0,0,0,2,0,0,0,0,0,0,1,0},
                     {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
                     {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
                     {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
@@ -179,8 +179,8 @@ public class Scene {
     }
 
     public class Point{
-        float x,y,z;
-        public Point(float x,float y,float z){
+        double x,y,z;
+        public Point(double x,double y,double z){
             this.x=x;this.y=y;this.z=z;
         }
     }
@@ -189,12 +189,12 @@ public class Scene {
         return new Point(get_scene_width_ns()-scene_j-1,get_scene_width_we()-scene_k-1, scene_i);
     }
 
-    public Point transform_render_to_array(float render_x, float render_y, float render_z){
+    public Point transform_render_to_array(double render_x, double render_y, double render_z){
         return new Point(render_z,get_scene_width_ns()-render_x-1, get_scene_width_we()-render_y-1);
     }
 
     //坐标变换，由sdk的(x,y,z)变到渲染引擎的(x,y,z)
-    public Point transform_sdk_to_render(float x,float y,float z){
+    public Point transform_sdk_to_render(double x,double y,double z){
         return new Point(-z,-x,y);
     }
 }

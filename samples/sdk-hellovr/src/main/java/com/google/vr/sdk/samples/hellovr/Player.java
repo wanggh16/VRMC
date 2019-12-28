@@ -2,6 +2,10 @@ package com.google.vr.sdk.samples.hellovr;
 
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Collections;
+
 import cc.lym.Renderer.BlockRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 
@@ -11,7 +15,8 @@ public class Player extends Entity{
     private HeadTransformProvider head;
     private BlockRenderer blockRenderer;
     private boolean[] move; //记录移动方向的数组，长为4，每一位分别代表向前后左右移动
-    private float MOVE_SPEED=0.04f;
+    private float MOVE_SPEED=0.06f;
+    private float HAND_REACH=4;
     public enum Direction{
         FORWARD,BACKWARD,LEFTWARD,RIGHTWARD
     }
@@ -86,26 +91,121 @@ public class Player extends Entity{
             speed[2]+=0.15;
     }
 
-    public void destroy_block(){
-        Scene.Point block_center_pos_render=get_facing_block();
-        Scene.Point block_center_pos_array=scene.transform_render_to_array(block_center_pos_render.x,block_center_pos_render.y,block_center_pos_render.z);
-        int i=Math.round(block_center_pos_array.x);
-        int j=Math.round(block_center_pos_array.y);
-        int k=Math.round(block_center_pos_array.z);
+    public void set_block(int i, int j, int k, char blockid){
+        //Scene.Point block_center_pos_array=scene.transform_render_to_array(block_center_pos_render.x,block_center_pos_render.y,block_center_pos_render.z);
+        //int i=Math.round(block_center_pos_array.x);
+        //int j=Math.round(block_center_pos_array.y);
+        //int k=Math.round(block_center_pos_array.z);
         int up =scene.get_neighbor_block_id(i,j,k, Scene.Position.UP);
         int down =scene.get_neighbor_block_id(i,j,k, Scene.Position.DOWN);
         int east =scene.get_neighbor_block_id(i,j,k, Scene.Position.EAST);
         int west =scene.get_neighbor_block_id(i,j,k, Scene.Position.WEST);
         int north =scene.get_neighbor_block_id(i,j,k, Scene.Position.NORTH);
         int south =scene.get_neighbor_block_id(i,j,k, Scene.Position.SOUTH);
-        blockRenderer.updateBlock((int)Math.round(block_center_pos_render.x),(int)Math.round(block_center_pos_render.y),(int)Math.round(block_center_pos_render.z),0, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
-        scene.scene[i][j][k]=0;
+        Scene.Point block_center_pos_render=scene.transform_array_to_render(i, j, k);
+        blockRenderer.updateBlock(Math.round(block_center_pos_render.x),Math.round(block_center_pos_render.y),Math.round(block_center_pos_render.z),blockid, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
+        scene.scene[i][j][k]=blockid;
         Log.i("xyz", "x: "+block_center_pos_render.x+"y: "+block_center_pos_render.y+"z: "+block_center_pos_render.z);
     }
 
-    private Scene.Point get_facing_block(){
+    public CrossPoint get_facing_block(){
         Scene.Point forward_v = scene.transform_sdk_to_render(headRPY[0],headRPY[1],headRPY[2]);
         Log.i("forward_v", "x: "+forward_v.x+"y: "+forward_v.y+"z: "+forward_v.z);
-        return scene.new Point(1,2,3);
+        if (forward_v.x == 0) forward_v.x = 1e-6f;
+        if (forward_v.y == 0) forward_v.y = 1e-6f;
+        if (forward_v.z == 0) forward_v.z = 1e-6f;
+        List<CrossPoint> P = new ArrayList<>();
+        Scene.Point block_curr = scene.transform_render_to_array(center_pos[0],center_pos[1],center_pos[2]);
+        int i=(int)Math.round(block_curr.x);
+        int j=(int)Math.round(block_curr.y);
+        int k=(int)Math.round(block_curr.z);
+        if (scene.scene[i][j][k] != 0) return new CrossPoint(0, 6, i, j, k);
+        Log.i("cross", "i"+i+"j"+j+"k"+k);
+        if (forward_v.x > 0){
+            double dist = (Math.round(center_pos[0]) + 0.5f - center_pos[0])/forward_v.x;
+            while (dist < HAND_REACH){
+                block_curr = scene.transform_render_to_array(
+                        center_pos[0] + (dist + 1e-8) * forward_v.x,
+                        center_pos[1] + (dist + 1e-8) * forward_v.y,
+                        center_pos[2] + (dist + 1e-8) * forward_v.z);
+                Log.i("cross", "xxx"+block_curr.x+"yyy"+block_curr.y+"zzz"+block_curr.z);
+                P.add(new CrossPoint(dist, 0, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
+                dist += 1/forward_v.x;
+            }
+        }
+        else{
+            double dist = (center_pos[0] + 0.5f - Math.round(center_pos[0]))/(-forward_v.x);
+            while (dist < HAND_REACH){
+                block_curr = scene.transform_render_to_array(
+                        center_pos[0] + (dist + 1e-8) * forward_v.x,
+                        center_pos[1] + (dist + 1e-8) * forward_v.y,
+                        center_pos[2] + (dist + 1e-8) * forward_v.z);
+                P.add(new CrossPoint(dist, 1, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
+                dist += 1/(-forward_v.x);
+            }
+        }
+        if (forward_v.y > 0){
+            double dist = (Math.round(center_pos[1]) + 0.5f - center_pos[1])/forward_v.y;
+            while (dist < HAND_REACH){
+                block_curr = scene.transform_render_to_array(
+                        center_pos[0] + (dist + 1e-8) * forward_v.x,
+                        center_pos[1] + (dist + 1e-8) * forward_v.y,
+                        center_pos[2] + (dist + 1e-8) * forward_v.z);
+                P.add(new CrossPoint(dist, 2, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
+                dist += 1/forward_v.y;
+            }
+        }
+        else{
+            double dist = (center_pos[1] + 0.5f - Math.round(center_pos[1]))/(-forward_v.y);
+            while (dist < HAND_REACH){
+                block_curr = scene.transform_render_to_array(
+                        center_pos[0] + (dist + 1e-8) * forward_v.x,
+                        center_pos[1] + (dist + 1e-8) * forward_v.y,
+                        center_pos[2] + (dist + 1e-8) * forward_v.z);
+                P.add(new CrossPoint(dist, 3, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
+                dist += 1/(-forward_v.y);
+            }
+        }
+        if (forward_v.z > 0){
+            double dist = (Math.round(center_pos[2]) + 0.5f - center_pos[2])/forward_v.z;
+            while (dist < HAND_REACH){
+                block_curr = scene.transform_render_to_array(
+                        center_pos[0] + (dist + 1e-8) * forward_v.x,
+                        center_pos[1] + (dist + 1e-8) * forward_v.y,
+                        center_pos[2] + (dist + 1e-8) * forward_v.z);
+                P.add(new CrossPoint(dist, 4, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
+                dist += 1/forward_v.z;
+            }
+        }
+        else{
+            double dist = (center_pos[2] + 0.5f - Math.round(center_pos[2]))/(-forward_v.z);
+            while (dist < HAND_REACH){
+                block_curr = scene.transform_render_to_array(
+                        center_pos[0] + (dist + 1e-8) * forward_v.x,
+                        center_pos[1] + (dist + 1e-8) * forward_v.y,
+                        center_pos[2] + (dist + 1e-8) * forward_v.z);
+                P.add(new CrossPoint(dist, 5, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
+                dist += 1/(-forward_v.z);
+            }
+        }
+        Collections.sort(P);
+        CrossPoint cross = null;
+        boolean havecross = false;
+        for(int ii = 0;ii < P.size(); ii ++){
+            cross = P.get(ii);
+            Log.i("cross", "cross:type"+cross.type+"i"+cross.nextblocki+"j"+cross.nextblockj+"k"+cross.nextblockk);
+            if (cross.nextblocki >= 0 && cross.nextblocki < scene.get_scene_height()
+                    && cross.nextblockj >= 0 && cross.nextblockj < scene.get_scene_width_ns()
+                    && cross.nextblockk >= 0 && cross.nextblockk < scene.get_scene_width_we()) {
+                Log.i("cross", "valid");
+                if (scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 0) {
+                    havecross = true;
+                    Log.i("cross", "dist:" + cross.dist + "i:" + cross.nextblocki + "j:" + cross.nextblockj + "k:" + cross.nextblockk + "type:" + cross.type);
+                    break;
+                }
+            }
+        }
+        if (havecross) return cross;
+        else return null;
     }
 }

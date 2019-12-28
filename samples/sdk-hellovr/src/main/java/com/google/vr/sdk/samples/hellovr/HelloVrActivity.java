@@ -100,7 +100,7 @@ public class HelloVrActivity extends GvrActivity {
 
         headRPY = new float[3];
         scene=new Scene();
-        player=new Player(0.25f,0.25f,0.9f, 0.3f,new float[]{4,4,5}, headTransformProvider, blockRenderer, scene);
+        player=new Player(0.25f,0.25f,0.7f, 0.4f,new float[]{4,4,5}, headTransformProvider, blockRenderer, scene);
 
     }
 
@@ -120,22 +120,34 @@ public class HelloVrActivity extends GvrActivity {
      */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        CrossPoint cross = player.get_facing_block();
         switch (event.getAction()){
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
-                player.jump();
-                player.destroy_block();
-                player.stop_move_toward(Player.Direction.FORWARD);
+                //player.jump();
+                if (cross != null){
+                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
+                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
+                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
+                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
+                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
+                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
+                }
+                //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
-                player.set_move_toward(Player.Direction.FORWARD);
+                if (cross != null) {
+                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+                }
+                //player.set_move_toward(Player.Direction.FORWARD);
         }
         return true;
     }
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         Log.i("keycode", String.valueOf(keyCode));
+        CrossPoint cross = player.get_facing_block();
         switch (keyCode){
             case KeyEvent.KEYCODE_X:
                 player.jump();
@@ -151,6 +163,21 @@ public class HelloVrActivity extends GvrActivity {
                 break;
             case KeyEvent.KEYCODE_D:
                 player.set_move_toward(Player.Direction.RIGHTWARD);
+                break;
+            case KeyEvent.KEYCODE_Z:
+                if (cross != null){
+                    player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+                }
+                break;
+            case KeyEvent.KEYCODE_C:
+                if (cross != null){
+                    if (cross.type == 0) player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)2);
+                    else if (cross.type == 1) player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)2);
+                    else if (cross.type == 2) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)2);
+                    else if (cross.type == 3) player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)2);
+                    else if (cross.type == 4) player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)2);
+                    else if (cross.type == 5) player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)2);
+                }
                 break;
             default:
         }
