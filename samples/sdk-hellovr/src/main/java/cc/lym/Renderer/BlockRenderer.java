@@ -391,6 +391,7 @@ public class BlockRenderer implements HeadlessRenderer {
 		int counter=0,total=0;
 		@Override public void run()
 		{
+			setName("block thrd");
 			while(true)
 			{
 				int counter=0;

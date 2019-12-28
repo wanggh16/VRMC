@@ -253,6 +253,7 @@ public class HelloVrActivity extends GvrActivity {
         }
         @Override public void run()
         {
+            setName("scene modifier");
             setUncaughtExceptionHandler((thread,exception)->{Log.e(TAG,"uncaught",exception);throw new RuntimeException(exception);});
             sleep_(1000);
             int ns_1=scene.get_scene_width_ns()-1;
