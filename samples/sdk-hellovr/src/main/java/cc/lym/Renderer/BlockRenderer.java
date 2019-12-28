@@ -614,29 +614,19 @@ public class BlockRenderer implements HeadlessRenderer {
 					FloatBuffer illuBuffer=ByteBuffer.allocateDirect(4*illu.size()).order(ByteOrder.nativeOrder()).asFloatBuffer();
 					IntBuffer indexBuffer=ByteBuffer.allocateDirect(4*index.size()).order(ByteOrder.nativeOrder()).asIntBuffer();
 					
-					int[]_position_=new int[position.size()];
-					for(int i=0;i<_position_.length;i++)
-						_position_[i]=position.get(i);
+					for(int _position_:position)
 					PositionBuffer.put(_position_);PositionBuffer.rewind();
 
-					int[]_blockPosition_=new int[blockPosition.size()];
-					for(int i=0;i<_blockPosition_.length;i++)
-						_blockPosition_[i]=blockPosition.get(i);
+					for(int _blockPosition_:blockPosition)
 					BlockPositionBuffer.put(_blockPosition_);BlockPositionBuffer.rewind();
 
-					float[]_uv_=new float[uv.size()];
-					for(int i=0;i<_uv_.length;i++)
-						_uv_[i]=uv.get(i);
+					for(float _uv_:uv)
 					UVBuffer.put(_uv_);UVBuffer.rewind();
 
-					float[]_illu_=new float[illu.size()];
-					for(int i=0;i<_illu_.length;i++)
-						_illu_[i]=illu.get(i);
+					for(float _illu_:illu)
 					illuBuffer.put(_illu_);illuBuffer.rewind();
 
-					int[]_index_=new int[index.size()];
-					for(int i=0;i<_index_.length;i++)
-						_index_[i]=index.get(i);
+					for(int _index_:index)
 					indexBuffer.put(_index_);indexBuffer.rewind();
 
 					synchronized(bufferLock)
