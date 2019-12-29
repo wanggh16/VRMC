@@ -20,6 +20,7 @@ import cc.lym.leap.LeapReceiver;
 
 public class HandRenderer implements HeadlessRenderer {
 	private static final String LOG_TAG="HandRenderer";
+	private static final float extending=2.5f;
 	private final LeapReceiver receiver;
 	private Hand hand;
 	private static final FloatBuffer uvBuffer;
@@ -117,13 +118,13 @@ public class HandRenderer implements HeadlessRenderer {
 				float rightx=hand.palmNormY*hand.palmDirectionZ-hand.palmNormZ*hand.palmDirectionY;
 				float righty=hand.palmNormZ*hand.palmDirectionX-hand.palmNormX*hand.palmDirectionZ;
 				float rightz=hand.palmNormX*hand.palmDirectionY-hand.palmNormY*hand.palmDirectionX;
-				center_right_forward=new float[]{hand.palmPosX,hand.palmPosY,hand.palmPosZ,rightx,righty,rightz,hand.palmDirectionX,hand.palmDirectionY,hand.palmDirectionZ};
+				center_right_forward=new float[]{hand.palmPosX*extending,hand.palmPosY*extending,hand.palmPosZ*extending,rightx,righty,rightz,hand.palmDirectionX,hand.palmDirectionY,hand.palmDirectionZ};
 				
 				norm=new float[]{(float)Math.exp((System.nanoTime()-lastGet)/-3e8),hand.palmNormY,(float)Math.exp((System.nanoTime()-lastPut)/-3e8),open?1:0};
 			}
 			else
 			{
-				center_right_forward=new float[]{0,340,0,-1,0,0,0,0,-1};
+				center_right_forward=new float[]{0,500,0,-1,0,0,0,0,-1};
 				norm=new float[]{0,1,0,0};
 			}
 			alpha=-center_right_forward[0]/center_right_forward[1];
