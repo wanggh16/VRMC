@@ -123,7 +123,7 @@ public class HandRenderer implements HeadlessRenderer {
 			}
 			else
 			{
-				center_right_forward=new float[]{0,200,0,-1,0,0,0,0,-1};
+				center_right_forward=new float[]{0,240,0,-1,0,0,0,0,-1};
 				norm=new float[]{0,1,0,0};
 			}
 			alpha=-center_right_forward[0]/center_right_forward[1];

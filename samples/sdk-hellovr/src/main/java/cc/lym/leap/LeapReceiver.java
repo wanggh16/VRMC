@@ -62,7 +62,7 @@ public class LeapReceiver
 	private Hand lasthand=null;
 	public static class Location{public final double x,y,z;Location(double x,double y,double z){this.x=x;this.y=y;this.z=z;}}
 	public synchronized Location queryPosition(){return loc;}
-	public synchronized Hand getHand(){return new Hand(lasthand);}
+	public synchronized Hand getHand(){if(lasthand==null)return null;return new Hand(lasthand);}
 	public LeapReceiver(Runnable onGet,Runnable onPut,Runnable onOpenMenu,Runnable onCloseMenu)
 	{
 		this.onGet=onGet;this.onPut=onPut;this.onOpenMenu=onOpenMenu;this.onCloseMenu=onCloseMenu;

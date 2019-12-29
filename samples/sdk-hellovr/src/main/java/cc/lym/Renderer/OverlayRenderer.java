@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLES31;
 import android.opengl.GLUtils;
+import android.opengl.Matrix;
 import android.util.Log;
 
 import com.google.vr.sdk.base.Eye;
@@ -29,6 +30,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 	private IntBuffer indexBuffer;
 	
 	private int glProgram;
+	private int glParam_u_transform;
 	private int glParam_a_Position;
 	private int glParam_a_UV;
 	private int[]textureId=new int[1];
@@ -36,10 +38,11 @@ public class OverlayRenderer implements HeadlessRenderer {
 	private Bitmap texture;
 	private boolean changed;
 	
-	public OverlayRenderer(Bitmap content)
+	public OverlayRenderer(Bitmap content, float depth, float width, float height)
 	{
+		width/=2;height/=2;
 		texture=content.copy(content.getConfig(),false);
-		float[]positions={-1,-1, 1,-1, 1,1, -1,-1, 1,1, -1,1};
+		float[]positions={width,depth,height, -width,depth,height, -width,depth,-height, width,depth,height, -width,depth,-height, width,depth,-height};
 		float[]uv={0,1,1,1,1,0,0,1,1,0,0,0};
 		int[]indices={0,1,2,3,4,5};
 		PositionBuffer=ByteBuffer.allocateDirect(4*positions.length).order(ByteOrder.nativeOrder()).asFloatBuffer();PositionBuffer.put(positions);PositionBuffer.rewind();
@@ -54,13 +57,14 @@ public class OverlayRenderer implements HeadlessRenderer {
 	
 	private static final String vertexShaderSourceCode= "" +
 			Renderer.SHADER_VERSION_DIRECTIVE +
-			"in vec2 a_Position;" +
+			"uniform mat4 u_transform;" +
+			"in vec3 a_Position;" +
 			"in vec2 a_UV;" +
 			"out vec2 v_UV;" +
 			"" +
 			"void main()" +
 			"{" +
-			"	gl_Position=vec4(a_Position,0.0,1.0);" +
+			"	gl_Position=u_transform*vec4(a_Position,1.0);" +
 			"	v_UV=a_UV;" +
 			"}" +
 			"";
@@ -81,8 +85,10 @@ public class OverlayRenderer implements HeadlessRenderer {
 			"}" +
 			"";
 	
+	private final float[]headTrans=new float[16];
+	
 	@Override
-	public void onNewFrame(HeadTransform headTransform) {}
+	public void onNewFrame(HeadTransform headTransform) {headTransform.getHeadView(headTrans,0);}
 	@Override
 	public void onDrawEye(Eye eye)
 	{
@@ -114,11 +120,21 @@ public class OverlayRenderer implements HeadlessRenderer {
 		}
 		}
 		
+		float[]headInv=new float[16];
+		Matrix.invertM(headInv,0,headTrans,0);
+		float[]tmp=new float[16];
+		Matrix.multiplyMM(tmp,0,eye.getEyeView(),0,headInv,0);
+		float[]head2eye=new float[16];
+		Matrix.multiplyMM(head2eye,0,tmp,0,new float[]{-1,0,0,0,0,0,-1,0,0,-1,0,0,0,0,0,1},0);
+		float[]perspective=new float[16];
+		Matrix.multiplyMM(perspective,0,eye.getPerspective(0.05f,250.0f),0,head2eye,0);
+		GLES31.glUniformMatrix4fv(glParam_u_transform,1,false,perspective,0);
+		
 		GLES31.glEnableVertexAttribArray(glParam_a_Position);
 		GLES31.glEnableVertexAttribArray(glParam_a_UV);
 		Renderer.checkGlError();
 		
-		GLES31.glVertexAttribPointer(glParam_a_Position,2, GLES20.GL_FLOAT,false,0,PositionBuffer);
+		GLES31.glVertexAttribPointer(glParam_a_Position,3, GLES20.GL_FLOAT,false,0,PositionBuffer);
 		GLES31.glVertexAttribPointer(glParam_a_UV,2, GLES20.GL_FLOAT,false,0,UVBuffer);
 		Renderer.checkGlError();
 		GLES31.glActiveTexture(GLES31.GL_TEXTURE0);
@@ -149,6 +165,7 @@ public class OverlayRenderer implements HeadlessRenderer {
 			throw new RuntimeException(GLES31.glGetProgramInfoLog(glProgram));
 		}
 		Renderer.checkGlError();
+		glParam_u_transform=GLES31.glGetUniformLocation(glProgram,"u_transform");
 		glParam_a_Position=GLES31.glGetAttribLocation(glProgram,"a_Position");
 		glParam_a_UV=GLES31.glGetAttribLocation(glProgram,"a_UV");
 		Renderer.checkGlError();
