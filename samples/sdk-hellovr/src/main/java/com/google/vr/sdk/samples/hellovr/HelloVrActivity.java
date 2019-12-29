@@ -23,9 +23,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;                //detect screen press and release
 import android.view.KeyEvent;
+import android.media.MediaPlayer;
+
 import com.google.vr.sdk.base.AndroidCompat;
 import com.google.vr.sdk.base.GvrActivity;
 import com.google.vr.sdk.base.GvrView;
+import com.google.vr.sdk.audio.GvrAudioEngine;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,7 +59,6 @@ public class HelloVrActivity extends GvrActivity {
     public static int wrapSN(int val){return ((val-SOUTH_LIMIT)%(NORTH_LIMIT-SOUTH_LIMIT)+(NORTH_LIMIT-SOUTH_LIMIT))%(NORTH_LIMIT-SOUTH_LIMIT)+SOUTH_LIMIT;}
     public static int wrapDU(int val){return ((val-BOTTOM_LIMIT)%(TOP_LIMIT-BOTTOM_LIMIT)+(TOP_LIMIT-BOTTOM_LIMIT))%(TOP_LIMIT-BOTTOM_LIMIT)+BOTTOM_LIMIT;}
     private static final String TAG = "HelloVrActivity";
-    private static final int MAZE_WIDTH = 9;          //size of maze(odd only)
 	private static final int[]AVAILABLE_BLOCKS={1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30};
 	private static final List<Integer>AVAILABLE_BLOCKS_LIST=new ArrayList<>();
 	static
@@ -66,9 +68,7 @@ public class HelloVrActivity extends GvrActivity {
 	}
 
     private Scene scene;
-
     private Player player;        //玩家
-    private float[] headRPY;
 
     BlockRenderer blockRenderer;
     HeadTransformProvider headTransformProvider;
@@ -77,7 +77,20 @@ public class HelloVrActivity extends GvrActivity {
     LeapReceiver leapReceiver;
     Bitmap overlay;
 
+    private MediaPlayer mp;
 
+    private float[] headRotation;
+    private float speed_2_old = 0;
+    private float soundRelativex;
+    private float soundRelativey;
+    private float soundRelativez;
+    private GvrAudioEngine gvrAudioEngine;
+    private volatile int walkGrassId = GvrAudioEngine.INVALID_ID;
+    private volatile int walkStoneId = GvrAudioEngine.INVALID_ID;
+    private volatile int dropId = GvrAudioEngine.INVALID_ID;
+    private static final String WALK_GRASS_SOUND_FILE = "audio/grass2.ogg";
+    private static final String WALK_STONE_SOUND_FILE = "audio/stone6.ogg";
+    private static final String DROP_SOUND_FILE = "audio/gravel1.ogg";
     /**
      * Sets the view to our GvrView and initializes the transformation matrices we will use
      * to render our scene.
@@ -87,6 +100,37 @@ public class HelloVrActivity extends GvrActivity {
         Thread.setDefaultUncaughtExceptionHandler((t,e) -> Log.e("uncaught exception","",e));
         super.onCreate(savedInstanceState);
         setContentView(R.layout.common_ui);
+
+        headRotation = new float[4];
+        gvrAudioEngine = new GvrAudioEngine(this, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+        // Avoid any delays during start-up due to decoding of sound files.
+        new Thread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        mp = MediaPlayer.create(HelloVrActivity.this, R.raw.creative6);
+                        mp.setVolume(0.03f, 0.03f);
+                        mp.setLooping(true);
+                        mp.start();
+
+                        gvrAudioEngine.preloadSoundFile(WALK_GRASS_SOUND_FILE);
+                        walkGrassId = gvrAudioEngine.createSoundObject(WALK_GRASS_SOUND_FILE);
+                        gvrAudioEngine.setSoundObjectPosition(walkGrassId, 0, -1.5f, 0);
+                        gvrAudioEngine.setSoundVolume(walkGrassId, 0.5f);
+                        gvrAudioEngine.playSound(walkGrassId, true /* looped playback */);
+                        gvrAudioEngine.pauseSound(walkGrassId);
+
+                        gvrAudioEngine.preloadSoundFile(WALK_STONE_SOUND_FILE);
+                        walkStoneId = gvrAudioEngine.createSoundObject(WALK_STONE_SOUND_FILE);
+                        gvrAudioEngine.setSoundObjectPosition(walkStoneId, 0, -1.5f, 0);
+                        gvrAudioEngine.setSoundVolume(walkStoneId, 1.0f);
+                        gvrAudioEngine.playSound(walkStoneId, true /* looped playback */);
+                        gvrAudioEngine.pauseSound(walkStoneId);
+
+                        gvrAudioEngine.preloadSoundFile(DROP_SOUND_FILE);
+                    }
+                })
+                .start();
 
         GvrView gvrView = findViewById(R.id.gvr_view);
         gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
@@ -121,8 +165,7 @@ public class HelloVrActivity extends GvrActivity {
         }catch(IOException e){throw new RuntimeException(e);}
         new SceneModifier().start();
 
-        headRPY = new float[3];
-        player=new Player(0.25f,0.25f,1.4f,0.3f,new float[]{15,45,55}, headTransformProvider, blockRenderer, handRenderer, scene);
+        player=new Player(0.25f,0.25f,1.5f,0.2f,new float[]{10,41,7}, headTransformProvider, blockRenderer, handRenderer, scene);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
@@ -146,8 +189,8 @@ public class HelloVrActivity extends GvrActivity {
         switch (event.getAction()){
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
-                //player.jump();
-                setBlock();
+                player.jump();
+                //setBlock();
                 //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
@@ -279,7 +322,39 @@ public class HelloVrActivity extends GvrActivity {
                 //Log.i("hhh1", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
                 sleep_(20);
                 player.update_pos();
-                Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
+                // Update the 3d audio engine with the most recent head rotation.
+                player.head.getQuaternion(headRotation, 0);
+                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                gvrAudioEngine.update();
+                //check play walk sound or not
+                int bottom = player.getBottomBlock();
+                if (player.isMoving()){
+                    if (bottom == 0 || bottom == 31){
+                        gvrAudioEngine.pauseSound(walkGrassId);
+                        gvrAudioEngine.pauseSound(walkStoneId);
+                    }
+                    else if (bottom == 2 || bottom == 5){
+                        gvrAudioEngine.resumeSound(walkGrassId);
+                        gvrAudioEngine.pauseSound(walkStoneId);
+                    }
+                    else{
+                        gvrAudioEngine.pauseSound(walkGrassId);
+                        gvrAudioEngine.resumeSound(walkStoneId);
+                    }
+                }
+                else{
+                    gvrAudioEngine.pauseSound(walkGrassId);
+                    gvrAudioEngine.pauseSound(walkStoneId);
+                }
+                if (player.speed[2] == 0 && speed_2_old < 0){
+                    dropId = gvrAudioEngine.createSoundObject(DROP_SOUND_FILE);
+                    gvrAudioEngine.setSoundObjectPosition(dropId, 0, -1.5f, 0);
+                    gvrAudioEngine.setSoundVolume(dropId, Math.min(1.0f, 8*speed_2_old*speed_2_old));
+                    gvrAudioEngine.playSound(dropId, false);
+                }
+                speed_2_old = player.speed[2];
+                Log.i("hhh", "bottom:"+speed_2_old);
+                //Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
             }
         }
     }

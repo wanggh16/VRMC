@@ -13,7 +13,7 @@ import cc.lym.Renderer.HeadTransformProvider;
 public class Player extends Entity{
 
     private float[] headRPY,headRight,headUp;
-    private HeadTransformProvider head;
+    public HeadTransformProvider head;
     private BlockRenderer blockRenderer;
     private final HandRenderer handRenderer;
     private boolean[] move; //记录移动方向的数组，长为4，每一位分别代表向前后左右移动
@@ -39,8 +39,8 @@ public class Player extends Entity{
         head.getForwardVector(headRPY,0);
         head.getRightVector(headRight,0);
         head.getUpVector(headUp,0);
-//        Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
-//        Log.i("hhh", "posx: "+center_pos[0]+", posy: "+center_pos[1]+", posz: "+center_pos[2]);
+        //Log.i("hhh", "xxxx: "+headRPY[0]+", yyyy: "+headRPY[1]+", zzzz: "+headRPY[2]);
+        //Log.i("hhh", "posx: "+center_pos[0]+", posy: "+center_pos[1]+", posz: "+center_pos[2]);
         if(move[0]){
             speed[0] = -MOVE_SPEED * headRPY[2];
             speed[1] = -MOVE_SPEED * headRPY[0];
@@ -93,6 +93,16 @@ public class Player extends Entity{
         }
     }
 
+    public boolean isMoving(){
+        if (move[0] || move[1] || move[2] || move[3]) return true;
+        return false;
+    }
+
+    public int getBottomBlock(){
+        Scene.Point feet = scene.transform_render_to_array(center_pos[0], center_pos[1], center_pos[2] - 1.6);
+        return scene.scene[(int)feet.x][(int)feet.y][(int)feet.z];
+    }
+
     public void jump(){
         if(collide_z()==-1)
             speed[2]+=0.15;
@@ -112,7 +122,7 @@ public class Player extends Entity{
         Scene.Point block_center_pos_render=scene.transform_array_to_render(i, j, k);
         blockRenderer.updateBlock(Math.round(block_center_pos_render.x),Math.round(block_center_pos_render.y),Math.round(block_center_pos_render.z),blockid, new int[]{up,south,east,north,west,down}, new int[][][]{{{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}, {{15, 15, 15}, {15, 15, 15}, {15, 15, 15}}});
         scene.scene[HelloVrActivity.wrapDU(i)][HelloVrActivity.wrapWE(j)][HelloVrActivity.wrapSN(k)]=blockid;
-        Log.i("xyz", "x: "+block_center_pos_render.x+"y: "+block_center_pos_render.y+"z: "+block_center_pos_render.z);
+        //Log.i("xyz", "x: "+block_center_pos_render.x+"y: "+block_center_pos_render.y+"z: "+block_center_pos_render.z);
     }
 
     public CrossPoint get_facing_block(){
@@ -121,7 +131,7 @@ public class Player extends Entity{
         for(int i=0;i<3;i++)
             pointingDirection[i]=headRPY[i]+headRight[i]*alphaBeta[0]+headUp[i]*alphaBeta[1];
         Scene.Point forward_v = scene.transform_sdk_to_render(pointingDirection[0],pointingDirection[1],pointingDirection[2]);
-        Log.i("forward_v", "x: "+forward_v.x+"y: "+forward_v.y+"z: "+forward_v.z);
+        //Log.i("forward_v", "x: "+forward_v.x+"y: "+forward_v.y+"z: "+forward_v.z);
         if (forward_v.x == 0) forward_v.x = 1e-6f;
         if (forward_v.y == 0) forward_v.y = 1e-6f;
         if (forward_v.z == 0) forward_v.z = 1e-6f;
@@ -131,7 +141,7 @@ public class Player extends Entity{
         int j=(int)Math.round(block_curr.y);
         int k=(int)Math.round(block_curr.z);
         if (scene.scene[HelloVrActivity.wrapDU(i)][HelloVrActivity.wrapWE(j)][HelloVrActivity.wrapSN(k)] != 0) return new CrossPoint(0, 6, i, j, k);
-        Log.i("cross", "i"+i+"j"+j+"k"+k);
+        //Log.i("cross", "i"+i+"j"+j+"k"+k);
         if (forward_v.x > 0){
             double dist = (Math.round(center_pos[0]) + 0.5f - center_pos[0])/forward_v.x;
             while (dist < HAND_REACH){
@@ -139,7 +149,6 @@ public class Player extends Entity{
                         center_pos[0] + (dist + 1e-8) * forward_v.x,
                         center_pos[1] + (dist + 1e-8) * forward_v.y,
                         center_pos[2] + (dist + 1e-8) * forward_v.z);
-                Log.i("cross", "xxx"+block_curr.x+"yyy"+block_curr.y+"zzz"+block_curr.z);
                 P.add(new CrossPoint(dist, 0, (int)Math.round(block_curr.x), (int)Math.round(block_curr.y), (int)Math.round(block_curr.z)));
                 dist += 1/forward_v.x;
             }
@@ -204,14 +213,14 @@ public class Player extends Entity{
         boolean havecross = false;
         for(int ii = 0;ii < P.size(); ii ++){
             cross = P.get(ii);
-            Log.i("cross", "cross:type"+cross.type+"i"+cross.nextblocki+"j"+cross.nextblockj+"k"+cross.nextblockk);
+            //Log.i("cross", "cross:type"+cross.type+"i"+cross.nextblocki+"j"+cross.nextblockj+"k"+cross.nextblockk);
             if (cross.nextblocki >= 0 && cross.nextblocki < scene.get_scene_height()
                     && cross.nextblockj >= 0 && cross.nextblockj < scene.get_scene_width_ns()
                     && cross.nextblockk >= 0 && cross.nextblockk < scene.get_scene_width_we()) {
-                Log.i("cross", "valid");
+                //Log.i("cross", "valid");
                 if (scene.scene[HelloVrActivity.wrapDU(cross.nextblocki)][HelloVrActivity.wrapWE(cross.nextblockj)][HelloVrActivity.wrapSN(cross.nextblockk)] != 0) {
                     havecross = true;
-                    Log.i("cross", "dist:" + cross.dist + "i:" + cross.nextblocki + "j:" + cross.nextblockj + "k:" + cross.nextblockk + "type:" + cross.type);
+                    //Log.i("cross", "dist:" + cross.dist + "i:" + cross.nextblocki + "j:" + cross.nextblockj + "k:" + cross.nextblockk + "type:" + cross.type);
                     break;
                 }
             }

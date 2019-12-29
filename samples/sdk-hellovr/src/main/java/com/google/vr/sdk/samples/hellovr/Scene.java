@@ -154,7 +154,7 @@ public class Scene {
                     {31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,31},
                     {31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,31},
                     {31, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0,31},
-                    {31, 0, 0, 0, 0, 0, 0, 5, 4, 5, 0, 0, 0, 0, 0, 0,31},
+                    {31, 0, 0, 0, 0, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0,31},
                     {31, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0,31},
                     {31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,31},
                     {31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,31},
@@ -309,5 +309,9 @@ public class Scene {
     //坐标变换，由sdk的(x,y,z)变到渲染引擎的(x,y,z)
     public Point transform_sdk_to_render(double x,double y,double z){
         return new Point(-z,-x,y);
+    }
+
+    public Point transform_render_to_sdk(double x,double y,double z){
+        return new Point(-y,z,-x);
     }
 }
