@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class LeapReceiver
 {
+	private static final float compensation=16.5f;
+	
 	static
 	{
 		new ForwardingThread().start();
@@ -107,7 +109,7 @@ public class LeapReceiver
 							hand.pinchNormalized=in.readFloat();
 							hand.grabNormalized=in.readFloat();
 							hand.palmPosX=in.readFloat();
-							hand.palmPosY=in.readFloat();
+							hand.palmPosY=in.readFloat()+compensation;
 							hand.palmPosZ=in.readFloat();
 							hand.palmNormX=in.readFloat();
 							hand.palmNormY=in.readFloat();
