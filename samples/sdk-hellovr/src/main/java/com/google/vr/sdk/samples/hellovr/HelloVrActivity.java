@@ -79,18 +79,24 @@ public class HelloVrActivity extends GvrActivity {
 
     private MediaPlayer mp;
 
+    private int blockCD = 0;
     private float[] headRotation;
     private float speed_2_old = 0;
-    private float soundRelativex;
-    private float soundRelativey;
-    private float soundRelativez;
+    private double soundRelativex;
+    private double soundRelativey;
+    private double soundRelativez;
     private GvrAudioEngine gvrAudioEngine;
     private volatile int walkGrassId = GvrAudioEngine.INVALID_ID;
     private volatile int walkStoneId = GvrAudioEngine.INVALID_ID;
     private volatile int dropId = GvrAudioEngine.INVALID_ID;
+    private volatile int digId = GvrAudioEngine.INVALID_ID;
+    private volatile int creeperId = GvrAudioEngine.INVALID_ID;
     private static final String WALK_GRASS_SOUND_FILE = "audio/grass2.ogg";
     private static final String WALK_STONE_SOUND_FILE = "audio/stone6.ogg";
     private static final String DROP_SOUND_FILE = "audio/gravel1.ogg";
+    private static final String DIG_GRASS_SOUND_FILE = "audio/diggrass2.ogg";
+    private static final String DIG_STONE_SOUND_FILE = "audio/digstone4.ogg";
+    private static final String CREEPER_SOUND_FILE = "audio/creeper.ogg";
     /**
      * Sets the view to our GvrView and initializes the transformation matrices we will use
      * to render our scene.
@@ -127,7 +133,20 @@ public class HelloVrActivity extends GvrActivity {
                         gvrAudioEngine.playSound(walkStoneId, true /* looped playback */);
                         gvrAudioEngine.pauseSound(walkStoneId);
 
+                        gvrAudioEngine.preloadSoundFile(CREEPER_SOUND_FILE);
+                        creeperId = gvrAudioEngine.createSoundObject(CREEPER_SOUND_FILE);
+                        soundRelativex = 10 - player.center_pos[0];
+                        soundRelativey = 45 - player.center_pos[1];
+                        soundRelativez = 4 - player.center_pos[2];
+                        Log.i("creeper", "xyz"+soundRelativex+soundRelativey+soundRelativez);
+                        Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
+                        gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+                        gvrAudioEngine.setSoundVolume(creeperId, 1.0f);
+                        gvrAudioEngine.playSound(creeperId, true /* looped playback */);
+
                         gvrAudioEngine.preloadSoundFile(DROP_SOUND_FILE);
+                        gvrAudioEngine.preloadSoundFile(DIG_GRASS_SOUND_FILE);
+                        gvrAudioEngine.preloadSoundFile(DIG_STONE_SOUND_FILE);
                     }
                 })
                 .start();
@@ -165,7 +184,7 @@ public class HelloVrActivity extends GvrActivity {
         }catch(IOException e){throw new RuntimeException(e);}
         new SceneModifier().start();
 
-        player=new Player(0.25f,0.25f,1.5f,0.2f,new float[]{10,41,7}, headTransformProvider, blockRenderer, handRenderer, scene);
+        player=new Player(0.25f,0.25f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
@@ -189,13 +208,13 @@ public class HelloVrActivity extends GvrActivity {
         switch (event.getAction()){
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
-                player.jump();
+                //player.jump();
                 //setBlock();
                 //player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
-                deleteBlock();
+                //deleteBlock();
                 //player.set_move_toward(Player.Direction.FORWARD);
         }
         return true;
@@ -220,10 +239,16 @@ public class HelloVrActivity extends GvrActivity {
                 player.set_move_toward(Player.Direction.RIGHTWARD);
                 break;
             case KeyEvent.KEYCODE_Z:
-                deleteBlock();
+                if (blockCD == 0){
+                    deleteBlock();
+                    blockCD = 5;
+                }
                 break;
             case KeyEvent.KEYCODE_C:
-                setBlock();
+                if (blockCD == 0){
+                    setBlock();
+                    blockCD = 5;
+                }
                 break;
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.10f;
@@ -238,29 +263,68 @@ public class HelloVrActivity extends GvrActivity {
     private void setBlock() {
         CrossPoint cross = player.get_facing_block();
         if (cross != null) {
-            if (cross.type == 0 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk))
+            boolean placesuccess = false;
+            if (cross.type == 0 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk)) {
                 player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, blockInHand);
-            else if (cross.type == 1 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk))
+                placesuccess = true;
+            }
+            else if (cross.type == 1 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk)) {
                 player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, blockInHand);
-            else if (cross.type == 2 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1))
+                placesuccess = true;
+            }
+            else if (cross.type == 2 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1)) {
                 player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, blockInHand);
-            else if (cross.type == 3 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1))
+                placesuccess = true;
+            }
+            else if (cross.type == 3 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1)) {
                 player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, blockInHand);
-            else if (cross.type == 4 && player.canPlaceBlock(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk))
+                placesuccess = true;
+            }
+            else if (cross.type == 4 && player.canPlaceBlock(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk)) {
                 player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, blockInHand);
-            else if (cross.type == 5 && player.canPlaceBlock(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk))
+                placesuccess = true;
+            }
+            else if (cross.type == 5 && player.canPlaceBlock(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk)) {
                 player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, blockInHand);
-            blockInHand=(char)(int)nextBlockType.next();
-            if(!nextBlockType.hasNext())
-            	nextBlockType=AVAILABLE_BLOCKS_LIST.iterator();
+                placesuccess = true;
+            }
+
+            if (placesuccess) {
+                if (blockInHand == 2 || blockInHand == 5 || blockInHand == 8 || blockInHand == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
+                else digId = gvrAudioEngine.createSoundObject(DIG_STONE_SOUND_FILE);
+                Scene.Point block_center_pos_render = scene.transform_array_to_render(cross.nextblocki, cross.nextblockj, cross.nextblockk);
+                soundRelativex = block_center_pos_render.x - player.center_pos[0];
+                soundRelativey = block_center_pos_render.y - player.center_pos[1];
+                soundRelativez = block_center_pos_render.z - player.center_pos[2];
+                Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
+                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+                gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
+                gvrAudioEngine.playSound(digId, false);
+
+                blockInHand = (char) (int) nextBlockType.next();
+                if (!nextBlockType.hasNext())
+                    nextBlockType = AVAILABLE_BLOCKS_LIST.iterator();
+            }
         }
     }
     
     private void deleteBlock() {
         CrossPoint cross = player.get_facing_block();
-        if (cross != null && scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 3
-                && scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk] != 31){
-            player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char)0);
+        if (cross != null){
+            char deletedblock = scene.scene[cross.nextblocki][cross.nextblockj][cross.nextblockk];
+            if (deletedblock != 3 && deletedblock != 31) {
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk, (char) 0);
+                if (deletedblock == 2 || deletedblock == 5 || deletedblock == 8 || deletedblock == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
+                else digId = gvrAudioEngine.createSoundObject(DIG_STONE_SOUND_FILE);
+                Scene.Point block_center_pos_render = scene.transform_array_to_render(cross.nextblocki, cross.nextblockj, cross.nextblockk);
+                soundRelativex = block_center_pos_render.x - player.center_pos[0];
+                soundRelativey = block_center_pos_render.y - player.center_pos[1];
+                soundRelativez = block_center_pos_render.z - player.center_pos[2];
+                Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
+                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+                gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
+                gvrAudioEngine.playSound(digId, false);
+            }
         }
     }
     
@@ -326,6 +390,7 @@ public class HelloVrActivity extends GvrActivity {
                 player.head.getQuaternion(headRotation, 0);
                 gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
                 gvrAudioEngine.update();
+                if (blockCD > 0) blockCD--;
                 //check play walk sound or not
                 int bottom = player.getBottomBlock();
                 if (player.isMoving()){
@@ -333,7 +398,7 @@ public class HelloVrActivity extends GvrActivity {
                         gvrAudioEngine.pauseSound(walkGrassId);
                         gvrAudioEngine.pauseSound(walkStoneId);
                     }
-                    else if (bottom == 2 || bottom == 5){
+                    else if (bottom == 2 || bottom == 5 || bottom == 8 || bottom == 28){
                         gvrAudioEngine.resumeSound(walkGrassId);
                         gvrAudioEngine.pauseSound(walkStoneId);
                     }
@@ -353,7 +418,15 @@ public class HelloVrActivity extends GvrActivity {
                     gvrAudioEngine.playSound(dropId, false);
                 }
                 speed_2_old = player.speed[2];
-                Log.i("hhh", "bottom:"+speed_2_old);
+
+                soundRelativex = 10 - player.center_pos[0];
+                soundRelativey = 45 - player.center_pos[1];
+                soundRelativez = 4 - player.center_pos[2];
+                Log.i("creeper", "x:"+soundRelativex+"y:"+soundRelativey+"z:"+soundRelativez);
+                Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
+                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+
+                //Log.i("hhh", "bottom:"+speed_2_old);
                 //Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
             }
         }
