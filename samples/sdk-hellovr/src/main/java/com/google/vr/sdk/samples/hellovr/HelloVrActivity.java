@@ -82,9 +82,6 @@ public class HelloVrActivity extends GvrActivity {
     private int blockCD = 0;
     private float[] headRotation;
     private float speed_2_old = 0;
-    private double soundRelativex;
-    private double soundRelativey;
-    private double soundRelativez;
     private GvrAudioEngine gvrAudioEngine;
     private volatile int walkGrassId = GvrAudioEngine.INVALID_ID;
     private volatile int walkStoneId = GvrAudioEngine.INVALID_ID;
@@ -135,15 +132,6 @@ public class HelloVrActivity extends GvrActivity {
 
                         gvrAudioEngine.preloadSoundFile(CREEPER_SOUND_FILE);
                         creeperId = gvrAudioEngine.createSoundObject(CREEPER_SOUND_FILE);
-                        soundRelativex = 10 - player.center_pos[0];
-                        soundRelativey = 45 - player.center_pos[1];
-                        soundRelativez = 4 - player.center_pos[2];
-                        Log.i("creeper", "xyz"+soundRelativex+soundRelativey+soundRelativez);
-                        Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
-                        gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
-                        gvrAudioEngine.setSoundVolume(creeperId, 1.0f);
-                        gvrAudioEngine.playSound(creeperId, true /* looped playback */);
-
                         gvrAudioEngine.preloadSoundFile(DROP_SOUND_FILE);
                         gvrAudioEngine.preloadSoundFile(DIG_GRASS_SOUND_FILE);
                         gvrAudioEngine.preloadSoundFile(DIG_STONE_SOUND_FILE);
@@ -209,13 +197,13 @@ public class HelloVrActivity extends GvrActivity {
             case MotionEvent.ACTION_UP:
                 Log.i(TAG, "UP");
                 //player.jump();
-                //setBlock();
-                //player.stop_move_toward(Player.Direction.FORWARD);
+                deleteBlock();
+                player.stop_move_toward(Player.Direction.FORWARD);
                 break;
             default:
                 Log.i(TAG, "DN");
                 //deleteBlock();
-                //player.set_move_toward(Player.Direction.FORWARD);
+                player.set_move_toward(Player.Direction.FORWARD);
         }
         return true;
     }
@@ -293,11 +281,12 @@ public class HelloVrActivity extends GvrActivity {
                 if (blockInHand == 2 || blockInHand == 5 || blockInHand == 8 || blockInHand == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
                 else digId = gvrAudioEngine.createSoundObject(DIG_STONE_SOUND_FILE);
                 Scene.Point block_center_pos_render = scene.transform_array_to_render(cross.nextblocki, cross.nextblockj, cross.nextblockk);
-                soundRelativex = block_center_pos_render.x - player.center_pos[0];
-                soundRelativey = block_center_pos_render.y - player.center_pos[1];
-                soundRelativez = block_center_pos_render.z - player.center_pos[2];
-                Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
-                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+                Scene.Point block_pos_gvr = scene.transform_render_to_sdk(block_center_pos_render.x, block_center_pos_render.y, block_center_pos_render.z);
+                Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
+                headTransformProvider.getQuaternion(headRotation, 0);
+                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
+                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
 
@@ -317,11 +306,12 @@ public class HelloVrActivity extends GvrActivity {
                 if (deletedblock == 2 || deletedblock == 5 || deletedblock == 8 || deletedblock == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
                 else digId = gvrAudioEngine.createSoundObject(DIG_STONE_SOUND_FILE);
                 Scene.Point block_center_pos_render = scene.transform_array_to_render(cross.nextblocki, cross.nextblockj, cross.nextblockk);
-                soundRelativex = block_center_pos_render.x - player.center_pos[0];
-                soundRelativey = block_center_pos_render.y - player.center_pos[1];
-                soundRelativez = block_center_pos_render.z - player.center_pos[2];
-                Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
-                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+                Scene.Point block_pos_gvr = scene.transform_render_to_sdk(block_center_pos_render.x, block_center_pos_render.y, block_center_pos_render.z);
+                Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
+                headTransformProvider.getQuaternion(headRotation, 0);
+                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
+                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
             }
@@ -386,25 +376,31 @@ public class HelloVrActivity extends GvrActivity {
                 //Log.i("hhh1", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
                 sleep_(20);
                 player.update_pos();
-                // Update the 3d audio engine with the most recent head rotation.
-                player.head.getQuaternion(headRotation, 0);
-                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                // Regular update call to GVR audio engine.
                 gvrAudioEngine.update();
+
                 if (blockCD > 0) blockCD--;
                 //check play walk sound or not
                 int bottom = player.getBottomBlock();
                 if (player.isMoving()){
-                    if (bottom == 0 || bottom == 31){
+                    if (bottom == 0 || bottom == 31){   //走在空气或空气墙上，不放走路声音
                         gvrAudioEngine.pauseSound(walkGrassId);
                         gvrAudioEngine.pauseSound(walkStoneId);
-                    }
-                    else if (bottom == 2 || bottom == 5 || bottom == 8 || bottom == 28){
-                        gvrAudioEngine.resumeSound(walkGrassId);
-                        gvrAudioEngine.pauseSound(walkStoneId);
-                    }
-                    else{
-                        gvrAudioEngine.pauseSound(walkGrassId);
-                        gvrAudioEngine.resumeSound(walkStoneId);
+                    }else {
+                        Scene.Point block_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]-1.5);
+                        Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
+                        headTransformProvider.getQuaternion(headRotation, 0);
+                        gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                        gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
+                        if (bottom == 2 || bottom == 5 || bottom == 8 || bottom == 28) {
+                            gvrAudioEngine.setSoundObjectPosition(walkGrassId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
+                            gvrAudioEngine.resumeSound(walkGrassId);
+                            gvrAudioEngine.pauseSound(walkStoneId);
+                        } else {
+                            gvrAudioEngine.setSoundObjectPosition(walkStoneId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
+                            gvrAudioEngine.pauseSound(walkGrassId);
+                            gvrAudioEngine.resumeSound(walkStoneId);
+                        }
                     }
                 }
                 else{
@@ -413,18 +409,31 @@ public class HelloVrActivity extends GvrActivity {
                 }
                 if (player.speed[2] == 0 && speed_2_old < 0){
                     dropId = gvrAudioEngine.createSoundObject(DROP_SOUND_FILE);
-                    gvrAudioEngine.setSoundObjectPosition(dropId, 0, -1.5f, 0);
+                    Scene.Point sound_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]-1.5f);
+                    Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
+                    headTransformProvider.getQuaternion(headRotation, 0);
+                    gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                    gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
+                    gvrAudioEngine.setSoundObjectPosition(dropId, (float)sound_pos_gvr.x, (float)sound_pos_gvr.y, (float)sound_pos_gvr.z);
                     gvrAudioEngine.setSoundVolume(dropId, Math.min(1.0f, 8*speed_2_old*speed_2_old));
                     gvrAudioEngine.playSound(dropId, false);
                 }
                 speed_2_old = player.speed[2];
 
-                soundRelativex = 10 - player.center_pos[0];
-                soundRelativey = 45 - player.center_pos[1];
-                soundRelativez = 4 - player.center_pos[2];
-                Log.i("creeper", "x:"+soundRelativex+"y:"+soundRelativey+"z:"+soundRelativez);
-                Scene.Point block_relative_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
-                gvrAudioEngine.setSoundObjectPosition(digId, (float)block_relative_gvr.x, (float)block_relative_gvr.y, (float)block_relative_gvr.z);
+//                soundRelativex = 13;
+//                soundRelativey = 42;
+//                soundRelativez = 1;
+//                Scene.Point sound_pos_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
+//                Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
+//                Log.i("sound", "x:"+sound_pos_gvr.x+"y:"+sound_pos_gvr.y+"z:"+sound_pos_gvr.z);
+//                Log.i("player", "x:"+player_pos_gvr.x+"y:"+player_pos_gvr.y+"z:"+player_pos_gvr.z);
+//                // Update the 3d audio engine with the most recent head rotation.
+//                headTransformProvider.getQuaternion(headRotation, 0);
+//                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+//                gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
+//                gvrAudioEngine.setSoundObjectPosition(creeperId, (float)sound_pos_gvr.x, (float)sound_pos_gvr.y, (float)sound_pos_gvr.z);
+//                // Regular update call to GVR audio engine.
+//                gvrAudioEngine.update();
 
                 //Log.i("hhh", "bottom:"+speed_2_old);
                 //Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
