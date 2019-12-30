@@ -85,7 +85,7 @@ public class HelloVrActivity extends GvrActivity {
     Bitmap overlay;
     private boolean leapHandUpMode=false;
     
-    private final Creeper[]creepers=new Creeper[2];
+    private final Creeper[]creepers=new Creeper[1];
 
     private MediaPlayer mp;
 
@@ -93,13 +93,14 @@ public class HelloVrActivity extends GvrActivity {
     private int explodei = 0, explodej = 0, explodek = 0;
     private float speed_2_old = 0;
     private float[] headRotation;
-    private GvrAudioEngine gvrAudioEngine;
+    private static GvrAudioEngine gvrAudioEngine;
     private volatile int walkGrassId = GvrAudioEngine.INVALID_ID;
     private volatile int walkStoneId = GvrAudioEngine.INVALID_ID;
     private volatile int dropId = GvrAudioEngine.INVALID_ID;
     private volatile int digId = GvrAudioEngine.INVALID_ID;
     private volatile int fuseId = GvrAudioEngine.INVALID_ID;
     private volatile int explodeId = GvrAudioEngine.INVALID_ID;
+    private volatile int creeperId = GvrAudioEngine.INVALID_ID;
     private static final String WALK_GRASS_SOUND_FILE = "audio/grass2.ogg";
     private static final String WALK_STONE_SOUND_FILE = "audio/stone6.ogg";
     private static final String DROP_SOUND_FILE = "audio/gravel1.ogg";
@@ -107,6 +108,7 @@ public class HelloVrActivity extends GvrActivity {
     private static final String DIG_STONE_SOUND_FILE = "audio/digstone4.ogg";
     private static final String FUSE_SOUND_FILE = "audio/fuse.ogg";
     private static final String EXPLODE_SOUND_FILE = "audio/explode2.ogg";
+    public static final String CREEPER_SOUND_FILE = "audio/creeper1.ogg";
     /**
      * Sets the view to our GvrView and initializes the transformation matrices we will use
      * to render our scene.
@@ -128,6 +130,11 @@ public class HelloVrActivity extends GvrActivity {
                         mp.setVolume(0.03f, 0.03f);
                         mp.setLooping(true);
                         mp.start();
+
+                        gvrAudioEngine.preloadSoundFile(CREEPER_SOUND_FILE);
+                        creeperId = gvrAudioEngine.createSoundObject(CREEPER_SOUND_FILE);
+                        gvrAudioEngine.setSoundVolume(creeperId, 1.0f);
+                        gvrAudioEngine.playSound(creeperId, true /* looped playback */);
 
                         gvrAudioEngine.preloadSoundFile(WALK_GRASS_SOUND_FILE);
                         walkGrassId = gvrAudioEngine.createSoundObject(WALK_GRASS_SOUND_FILE);
@@ -199,8 +206,13 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         player=new Player(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
-        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6f},scene);
+<<<<<<< HEAD
+        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6},scene);
+=======
+        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10.6f,41,6f},scene);
+>>>>>>> a8cd20d5a7b43d1518960e439f63704cfe13c4d5
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;updateItemBar();updateMainOverlay();},()->{leapHandUpMode=false;updateItemBar();updateMainOverlay();});
+
     }
 
     @Override
@@ -439,6 +451,7 @@ public class HelloVrActivity extends GvrActivity {
                 break;
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.05f;
+
                 break;
             default:
         }
@@ -480,11 +493,18 @@ public class HelloVrActivity extends GvrActivity {
                 //Log.i("hhh1", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
                 sleep_(20);
                 player.update_pos();
-                for(Creeper creeper:creepers){
-                    creeper.update_pos();
-                }
                 // Regular update call to GVR audio engine.
                 gvrAudioEngine.update();
+                headTransformProvider.getQuaternion(headRotation, 0);
+                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
+                for(Creeper creeper:creepers){
+                    creeper.update_pos();
+                    gvrAudioEngine.setSoundVolume(creeperId, Math.min(1.0f, 1/
+                            (Math.abs(player.center_pos[0] - creeper.center_pos[0]) + Math.abs(player.center_pos[1] - creeper.center_pos[1]) + Math.abs(player.center_pos[2] - creeper.center_pos[2]))
+                    ));
+                    Scene.Point creeper_pos_gvr = scene.transform_render_to_sdk(creeper.center_pos[0], creeper.center_pos[1], creeper.center_pos[2]);
+                    gvrAudioEngine.setSoundObjectPosition(creeperId, (float)creeper_pos_gvr.x, (float)creeper_pos_gvr.y, (float)creeper_pos_gvr.z);
+                }
 
                 if (blockCD > 0) blockCD--;
                 if (blockCD == 100){
@@ -494,15 +514,13 @@ public class HelloVrActivity extends GvrActivity {
                 //check play walk sound or not
                 int bottom = player.getBottomBlock();
                 if (player.isMoving()){
+                    Scene.Point block_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]-1.5);
+                    Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
+                    gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
                     if (bottom == 0 || bottom == 31){   //走在空气或空气墙上，不放走路声音
                         gvrAudioEngine.pauseSound(walkGrassId);
                         gvrAudioEngine.pauseSound(walkStoneId);
                     }else {
-                        Scene.Point block_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]-1.5);
-                        Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
-                        headTransformProvider.getQuaternion(headRotation, 0);
-                        gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
-                        gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
                         if (bottom == 2 || bottom == 5 || bottom == 8 || bottom == 28) {
                             gvrAudioEngine.setSoundObjectPosition(walkGrassId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                             gvrAudioEngine.resumeSound(walkGrassId);

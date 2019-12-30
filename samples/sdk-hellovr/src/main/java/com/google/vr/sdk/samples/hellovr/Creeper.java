@@ -21,19 +21,19 @@ public class Creeper extends Entity {
     public void set_next_action() {
         Location location=creeperAgent.getLocation();
         Log.i("creeper_prev", "x: "+center_pos[0]+", y: "+center_pos[1]+", z: "+center_pos[2]);
-        center_pos[0]=(float)location.x;
-        center_pos[1]=(float)location.y;
+        center_pos[0]=(float)location.x-0.5f;
+        center_pos[1]=(float)location.y-0.5f;
         center_pos[2]=(float)location.z+1f;
         speed_cnt+=1;
-        if(collide_wall){
-            creeperAgent.setLocAndSpeed(center_pos[0],center_pos[1],center_pos[2]-1f,speed[0],speed[1],speed[2],(float) Math.random() - 0.5f);
+        //if(collide_wall){
+            creeperAgent.setLocAndSpeed(center_pos[0]+0.5f,center_pos[1]+0.5f,center_pos[2]-1f,speed[0],speed[1],speed[2],0);
             Log.i("creeper_suc", "x: "+center_pos[0]+", y: "+center_pos[1]+", z: "+center_pos[2]);
             Log.i("creeper", "speedx: "+speed[0]+", speedy: "+speed[1]);
-        }
-        else if(speed_cnt%300 == 0){
+        //}
+        if(speed_cnt%300 == 0){
             speed[0]=Math.min(1.5f*((float)Math.random()-0.5f),0.4f);        //乱走
             speed[1]=Math.min(1.5f*((float)Math.random()-0.5f),0.4f);        //乱走
-            creeperAgent.setLocAndSpeed(center_pos[0],center_pos[1],center_pos[2]-1f,speed[0],speed[1],speed[2],(float) Math.random() - 0.5f);
+            creeperAgent.setLocAndSpeed(center_pos[0]+0.5f,center_pos[1]+0.5f,center_pos[2]-1f,speed[0],speed[1],speed[2],(float) Math.random() - 0.5f);
             //speed_cnt=0;
         }
 //        if(Math.abs(speed[2])<0.00001){                //乱跳
