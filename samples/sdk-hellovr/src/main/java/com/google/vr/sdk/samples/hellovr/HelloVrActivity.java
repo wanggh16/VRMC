@@ -206,11 +206,7 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         player=new Player(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
-<<<<<<< HEAD
-        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6},scene);
-=======
         for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10.6f,41,6f},scene);
->>>>>>> a8cd20d5a7b43d1518960e439f63704cfe13c4d5
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;updateItemBar();updateMainOverlay();},()->{leapHandUpMode=false;updateItemBar();updateMainOverlay();});
 
     }
