@@ -194,9 +194,9 @@ public class HelloVrActivity extends GvrActivity {
 
         player=new Player(0.25f,0.25f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
 		creepers[0].setIllumination(1);creepers[0].show();
-		creepers[0].setLocAndSpeed(10.5f,41.5f,3,0.1f,0);
+		creepers[0].setLocAndSpeed(10.5f,41.5f,3,0.1f,0, 0);
 		creepers[1].setIllumination(1);creepers[1].show();
-		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,(float)Math.PI/3);
+		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,-0.1f, 0.1f);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
@@ -443,24 +443,6 @@ public class HelloVrActivity extends GvrActivity {
                     gvrAudioEngine.playSound(dropId, false);
                 }
                 speed_2_old = player.speed[2];
-
-//                soundRelativex = 13;
-//                soundRelativey = 42;
-//                soundRelativez = 1;
-//                Scene.Point sound_pos_gvr = scene.transform_render_to_sdk(soundRelativex, soundRelativey, soundRelativez);
-//                Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
-//                Log.i("sound", "x:"+sound_pos_gvr.x+"y:"+sound_pos_gvr.y+"z:"+sound_pos_gvr.z);
-//                Log.i("player", "x:"+player_pos_gvr.x+"y:"+player_pos_gvr.y+"z:"+player_pos_gvr.z);
-//                // Update the 3d audio engine with the most recent head rotation.
-//                headTransformProvider.getQuaternion(headRotation, 0);
-//                gvrAudioEngine.setHeadRotation(headRotation[0], headRotation[1], headRotation[2], headRotation[3]);
-//                gvrAudioEngine.setHeadPosition((float)player_pos_gvr.x,(float)player_pos_gvr.y,(float)player_pos_gvr.z);
-//                gvrAudioEngine.setSoundObjectPosition(creeperId, (float)sound_pos_gvr.x, (float)sound_pos_gvr.y, (float)sound_pos_gvr.z);
-//                // Regular update call to GVR audio engine.
-//                gvrAudioEngine.update();
-
-                //Log.i("hhh", "bottom:"+speed_2_old);
-                //Log.i("hhh", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
             }
         }
     }
