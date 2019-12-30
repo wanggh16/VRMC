@@ -279,6 +279,14 @@ public class Scene {
         return -1;
     }
 
+    public boolean explodeable(int i,int j,int k){
+        if (i < scene.length && i >= 0 && j < scene[0].length && j >= 0 && k < scene[0][0].length && k >= 0){
+            if (scene[i][j][k] == 0 || scene[i][j][k] == 3 || scene[i][j][k] == 31) return false;
+            else return true;
+        }
+        else return false;
+    }
+
     public int get_scene_height(){
         return scene.length;
     }

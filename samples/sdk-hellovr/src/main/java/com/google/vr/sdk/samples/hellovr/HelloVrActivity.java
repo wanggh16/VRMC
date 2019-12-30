@@ -280,6 +280,8 @@ public class HelloVrActivity extends GvrActivity {
                 break;
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.10f;
+                //Scene.Point block_curr = scene.transform_render_to_array(player.center_pos[0],player.center_pos[1],player.center_pos[2] - 1);
+                //player.explode((int)block_curr.x, (int)block_curr.y, (int)block_curr.z, 3);
                 break;
             case KeyEvent.KEYCODE_1:    //选择物品栏中左边的方块
                 currentBlockIndex-=1;
@@ -358,7 +360,6 @@ public class HelloVrActivity extends GvrActivity {
                 gvrAudioEngine.setSoundObjectPosition(digId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
-
             }
         }
     }

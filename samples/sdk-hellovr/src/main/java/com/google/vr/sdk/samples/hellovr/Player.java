@@ -125,6 +125,43 @@ public class Player extends Entity{
         //Log.i("xyz", "x: "+block_center_pos_render.x+"y: "+block_center_pos_render.y+"z: "+block_center_pos_render.z);
     }
 
+    public void explode(int i, int j, int k, int power){
+        if (power == 1){
+            if (scene.explodeable(i, j, k))
+                set_block(i, j, k, (char)0);
+        }
+        else if (power == 2){
+            if (scene.explodeable(i, j, k))
+                set_block(i, j, k, (char)0);
+            for (int subi = -1;subi <= 1;subi++){
+                for (int subj = -1;subj <= 1;subj++){
+                    for (int subk = -1;subk <= 1;subk++){
+                        if (scene.explodeable(i+subi, j+subj, k+subk))
+                            if (Math.random() < 0.5) set_block(i+subi, j+subj, k+subk, (char)0);
+                    }
+                }
+            }
+        }
+        else if (power == 3){
+            for (int subi = -1;subi <= 1;subi++){
+                for (int subj = -1;subj <= 1;subj++){
+                    for (int subk = -1;subk <= 1;subk++){
+                        if (scene.explodeable(i+subi, j+subj, k+subk))
+                            set_block(i+subi, j+subj, k+subk, (char)0);
+                    }
+                }
+            }
+            for (int subi = -2;subi <= 2;subi++){
+                for (int subj = -2;subj <= 2;subj++){
+                    for (int subk = -2;subk <= 2;subk++){
+                        if (scene.explodeable(i+subi, j+subj, k+subk))
+                            if (Math.random() < 0.5) set_block(i+subi, j+subj, k+subk, (char)0);
+                    }
+                }
+            }
+        }
+    }
+
     public CrossPoint get_facing_block(){
         float[]alphaBeta=handRenderer.getAlphaBeta();
         float[]pointingDirection=new float[3];
