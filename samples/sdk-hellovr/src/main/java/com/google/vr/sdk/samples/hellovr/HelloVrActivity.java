@@ -36,12 +36,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import cc.lym.Renderer.BlockRenderer;
+import cc.lym.Renderer.EntityRenderer;
 import cc.lym.Renderer.HandRenderer;
 import cc.lym.Renderer.HeadTransformProvider;
 import cc.lym.Renderer.OverlayRenderer;
 import cc.lym.Renderer.Renderer;
 import cc.lym.leap.LeapReceiver;
 import cc.lym.util.Location;
+import cc.lym.util.Supplier;
 
 /**
  * A Google VR sample application.
@@ -75,7 +77,10 @@ public class HelloVrActivity extends GvrActivity {
     HandRenderer handRenderer;
     OverlayRenderer overlayRenderer;
     LeapReceiver leapReceiver;
+    EntityRenderer creeperRenderer;
     Bitmap overlay;
+    
+    private final CreeperAgent[]creepers=new CreeperAgent[1000];
 
     private MediaPlayer mp;
 
@@ -141,9 +146,23 @@ public class HelloVrActivity extends GvrActivity {
 
         GvrView gvrView = findViewById(R.id.gvr_view);
         gvrView.setEGLConfigChooser(8, 8, 8, 8, 16, 8);
-
+	
+		Supplier<Location> locationSupplier=()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5);
+        
         byte[]texture=null;
-        try{
+		try{
+			AssetFileDescriptor tex=getAssets().openFd("texture.png");
+			int length=(int)tex.getLength();
+			texture=new byte[length];
+			int res=tex.createInputStream().read(texture);
+			if(res!=length)
+				Log.w("texture loader",String.format("%d bytes expected, %d read",length,res));
+		}catch(IOException e){throw new RuntimeException("IOException",e);}
+		creeperRenderer=CreeperAgent.init(locationSupplier,creepers.length,texture);
+		for(int i=0;i<creepers.length;i++)creepers[i]=new CreeperAgent();
+		
+		texture=null;
+		try{
             AssetFileDescriptor tex=getAssets().openFd("wall.png");
             int length=(int)tex.getLength();
             texture=new byte[length];
@@ -153,7 +172,8 @@ public class HelloVrActivity extends GvrActivity {
         }catch(IOException e){throw new RuntimeException("IOException",e);}
         try{
             GvrView.StereoRenderer renderer= Renderer.base()
-                    .andThen(blockRenderer=new BlockRenderer(WEST_LIMIT,EAST_LIMIT,SOUTH_LIMIT,NORTH_LIMIT,BOTTOM_LIMIT,TOP_LIMIT,0,15,()->new Location(player.center_pos[0]+0.5,player.center_pos[1]+0.5,player.center_pos[2]+0.5),texture))
+                    .andThen(blockRenderer=new BlockRenderer(WEST_LIMIT,EAST_LIMIT,SOUTH_LIMIT,NORTH_LIMIT,BOTTOM_LIMIT,TOP_LIMIT,0,15,locationSupplier,texture))
+                    .andThen(creeperRenderer)
                     .andThen(headTransformProvider=new HeadTransformProvider())
                     .andThen(handRenderer=new HandRenderer())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png")),0.5f,0.7f,0.7f));
@@ -173,6 +193,10 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         player=new Player(0.25f,0.25f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
+		creepers[0].setIllumination(1);creepers[0].show();
+		creepers[0].setLocAndSpeed(10.5f,41.5f,3,0.1f,0);
+		creepers[1].setIllumination(1);creepers[1].show();
+		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,(float)Math.PI/3);
 
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
