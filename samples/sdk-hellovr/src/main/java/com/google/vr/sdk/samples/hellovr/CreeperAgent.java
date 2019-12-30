@@ -42,24 +42,24 @@ final class CreeperAgent
 		rectangles[4]=new EntityRenderer.Model.Rectangle(bodyLHL,bodyLLL,bodyLLH,bodyLHH,64,16,0,16);
 		rectangles[5]=new EntityRenderer.Model.Rectangle(bodyHLL,bodyLLL,bodyLHL,bodyHHL,80,16,0,16);
 		
-		EntityRenderer.ExprBuilder.Expr danglingTheta=builder.mul(builder.constant(0.5f),builder.cos(builder.mul(builder.mul(t,builder.constant(8f)),speed)));
+		EntityRenderer.ExprBuilder.Expr danglingTheta=builder.mul(builder.constant(0.2f),builder.cos(builder.mul(builder.mul(t,builder.constant(13.33f)),speed)));
 		EntityRenderer.ExprBuilder.Expr zbot=builder.sub(builder.constant(0.375f),builder.mul(builder.constant(0.375f),builder.cos(danglingTheta)));
-		EntityRenderer.ExprBuilder.Expr xbot=builder.mul(builder.constant(0.375f),builder.sin(danglingTheta));
 		for(int xoff=-1;xoff<2;xoff+=2)for(int yoff=-1;yoff<2;yoff+=2)
 		{
-			EntityRenderer.ExprBuilder.Expr xbotactual=builder.add(builder.constant(0.25f*xoff),xbot);
-			EntityRenderer.ExprBuilder.Expr xmin=builder.add(xbotactual,builder.constant(-0.125f));
-			EntityRenderer.ExprBuilder.Expr xmax=builder.add(xbotactual,builder.constant( 0.125f));
-			EntityRenderer.ExprBuilder.Expr ymin=builder.constant(0.25f*yoff-0.125f);
-			EntityRenderer.ExprBuilder.Expr ymax=builder.constant(0.25f*yoff+0.125f);
+			EntityRenderer.ExprBuilder.Expr xmin=builder.add(builder.constant(0.25f*xoff-0.125f),builder.mul(builder.constant(0.375f*xoff*yoff),builder.sin(danglingTheta)));
+			EntityRenderer.ExprBuilder.Expr xmax=builder.add(builder.constant(0.25f*xoff+0.125f),builder.mul(builder.constant(0.375f*xoff*yoff),builder.sin(danglingTheta)));
+			EntityRenderer.ExprBuilder.Expr xumin=builder.constant(0.25f*xoff-0.125f);
+			EntityRenderer.ExprBuilder.Expr xumax=builder.constant(0.25f*xoff+0.125f);
+			EntityRenderer.ExprBuilder.Expr ymin=builder.constant(0.15f*yoff-0.125f);
+			EntityRenderer.ExprBuilder.Expr ymax=builder.constant(0.15f*yoff+0.125f);
 			EntityRenderer.Model.Point legLLL=new EntityRenderer.Model.Point(xmin,ymin,zbot);
-			EntityRenderer.Model.Point legLLH=new EntityRenderer.Model.Point(xmin,ymin,builder.constant(0.375f));
+			EntityRenderer.Model.Point legLLH=new EntityRenderer.Model.Point(xumin,ymin,builder.constant(0.375f));
 			EntityRenderer.Model.Point legLHL=new EntityRenderer.Model.Point(xmin,ymax,zbot);
-			EntityRenderer.Model.Point legLHH=new EntityRenderer.Model.Point(xmin,ymax,builder.constant(0.375f));
+			EntityRenderer.Model.Point legLHH=new EntityRenderer.Model.Point(xumin,ymax,builder.constant(0.375f));
 			EntityRenderer.Model.Point legHLL=new EntityRenderer.Model.Point(xmax,ymin,zbot);
-			EntityRenderer.Model.Point legHLH=new EntityRenderer.Model.Point(xmax,ymin,builder.constant(0.375f));
+			EntityRenderer.Model.Point legHLH=new EntityRenderer.Model.Point(xumax,ymin,builder.constant(0.375f));
 			EntityRenderer.Model.Point legHHL=new EntityRenderer.Model.Point(xmax,ymax,zbot);
-			EntityRenderer.Model.Point legHHH=new EntityRenderer.Model.Point(xmax,ymax,builder.constant(0.375f));
+			EntityRenderer.Model.Point legHHH=new EntityRenderer.Model.Point(xumax,ymax,builder.constant(0.375f));
 			int rectoff=12+((xoff+1)+(yoff+1)/2)*6;
 			rectangles[rectoff+0]=new EntityRenderer.Model.Rectangle(legLLH,legHLH,legHHH,legLHH, 0,16,32,16);
 			rectangles[rectoff+1]=new EntityRenderer.Model.Rectangle(legLLL,legHLL,legHLH,legLLH,16,16,32,16);
