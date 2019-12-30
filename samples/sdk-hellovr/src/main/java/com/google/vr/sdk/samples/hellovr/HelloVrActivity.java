@@ -19,6 +19,7 @@ package com.google.vr.sdk.samples.hellovr;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;                //detect screen press and release
@@ -181,7 +182,7 @@ public class HelloVrActivity extends GvrActivity {
                     .andThen(headTransformProvider=new HeadTransformProvider())
                     .andThen(handRenderer=new HandRenderer())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png")),0.5f,0.7f,0.7f))//;
-                    .andThen(optionalBlockRender=new OverlayRenderer(overlay=BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")),0.499f,0.7f,0.7f));
+                    .andThen(optionalBlockRender=new OverlayRenderer(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")),0.499f,0.7f,0.7f));
             gvrView.setRenderer(renderer);
         }catch(IOException ignored){}
         gvrView.setTransitionViewEnabled(true);
@@ -203,7 +204,7 @@ public class HelloVrActivity extends GvrActivity {
 		creepers[1].setIllumination(1);creepers[1].show();
 		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,-0.1f, 0.1f, 0);
 
-        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;},()->{leapHandUpMode=false;});
+        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;updateItemBar();updateMainOverlay();},()->{leapHandUpMode=false;updateItemBar();updateMainOverlay();});
     }
 
     @Override
@@ -391,9 +392,23 @@ public class HelloVrActivity extends GvrActivity {
     private void updateItemBar(){
         try{
             Log.i("itembar",""+currentBlockId);
-            optionalBlockRender.changeContent(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")));
+            if(leapHandUpMode)
+				optionalBlockRender.changeContent(moveUp(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png"))));
+            else
+            	optionalBlockRender.changeContent(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")));
         }catch(IOException ignored){}
     }
+    private void updateMainOverlay(){
+    	if(leapHandUpMode)
+    		overlayRenderer.changeContent(moveUp(overlay));
+    	else
+	    	overlayRenderer.changeContent(overlay);
+	}
+	private static Bitmap moveUp(Bitmap bitmap)
+	{Log.w("move pic","up");
+	
+    	return Bitmap.createBitmap(bitmap,0,bitmap.getHeight()/2,bitmap.getWidth(),bitmap.getHeight()/2,null,false);
+	}
     
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
