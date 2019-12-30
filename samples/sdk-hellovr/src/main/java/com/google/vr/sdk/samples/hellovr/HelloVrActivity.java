@@ -199,8 +199,9 @@ public class HelloVrActivity extends GvrActivity {
         new SceneModifier().start();
 
         player=new Player(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
-        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6f},scene);
+        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10.6f,41,6f},scene);
         leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;updateItemBar();updateMainOverlay();},()->{leapHandUpMode=false;updateItemBar();updateMainOverlay();});
+
     }
 
     @Override
@@ -439,6 +440,7 @@ public class HelloVrActivity extends GvrActivity {
                 break;
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.05f;
+
                 break;
             default:
         }
