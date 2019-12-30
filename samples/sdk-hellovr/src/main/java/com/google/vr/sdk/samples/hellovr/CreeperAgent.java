@@ -44,7 +44,7 @@ final class CreeperAgent
 		rectangles[4]=new EntityRenderer.Model.Rectangle(bodyLHL,bodyLLL,bodyLLH,bodyLHH,64,16,0,16);
 		rectangles[5]=new EntityRenderer.Model.Rectangle(bodyHLL,bodyLLL,bodyLHL,bodyHHL,80,16,0,16);
 		
-		EntityRenderer.ExprBuilder.Expr danglingTheta=builder.mul(builder.constant(0.2f),builder.cos(builder.mul(builder.mul(t,builder.constant(13.33f)),builder.sqrt(builder.add(builder.exp2(speedx),builder.exp2(speedy))))));
+		EntityRenderer.ExprBuilder.Expr danglingTheta=builder.mul(builder.constant(0.2f),builder.cos(builder.mul(builder.mul(t,builder.constant(13.33f)),builder.add(builder.abs(speedx), builder.abs(speedy)))));
 		EntityRenderer.ExprBuilder.Expr zbot=builder.sub(builder.constant(0.375f),builder.mul(builder.constant(0.375f),builder.cos(danglingTheta)));
 		for(int xoff=-1;xoff<2;xoff+=2)for(int yoff=-1;yoff<2;yoff+=2)
 		{
