@@ -55,8 +55,10 @@ abstract public class Entity {
         }
         //处理z方向的碰撞，需要考虑重力：
         if(collide_z()==1 && speed[2]>0){
+            collide_wall=true;
             speed[2]=0;
         }else if(collide_z()==-1 && speed[2]<=0){    //y负方向有东西
+            collide_wall=true;
             speed[2]=0;
             return;
         }
