@@ -117,10 +117,9 @@ final class CreeperAgent
 	}
 	public void show(){renderer.enableEntity(instanceID);}
 	public void hide(){renderer.disableEntity(instanceID);}
-	public void setLocAndSpeed(float x,float y,float z,float speedx,float speedy,float speedz)
+	public void setLocAndSpeed(float x,float y,float z,float speedx,float speedy,float speedz,float headTheta)
 	{
 		speedx*=1e-9;speedy*=1e-9;speedz*=1e-9;
-		float headTheta=(float)Math.random()*0.5f-0.25f;//this.theta-theta;
 		this.x=x;this.y=y;this.z=z;this.speedx=speedx;this.speedy=speedy;this.speedz=speedz;
 		renderer.setEntityAttrib(instanceID,new float[]{
 				startTime=System.nanoTime(),
