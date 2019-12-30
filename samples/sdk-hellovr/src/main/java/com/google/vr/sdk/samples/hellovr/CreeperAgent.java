@@ -29,29 +29,29 @@ final class CreeperAgent
 		EntityRenderer.ExprBuilder.Expr y=builder.add(y0,builder.mul(t,speedy));
 		EntityRenderer.ExprBuilder.Expr z=builder.add(z0,builder.mul(t,speedz));
 		
-		EntityRenderer.Model.Point bodyLLL=new EntityRenderer.Model.Point(builder.constant(-0.175f),builder.constant(-0.175f),builder.constant(0.325f));
-		EntityRenderer.Model.Point bodyLLH=new EntityRenderer.Model.Point(builder.constant(-0.175f),builder.constant(-0.175f),builder.constant(1.25f));
-		EntityRenderer.Model.Point bodyLHL=new EntityRenderer.Model.Point(builder.constant(-0.175f),builder.constant( 0.175f),builder.constant(0.325f));
-		EntityRenderer.Model.Point bodyLHH=new EntityRenderer.Model.Point(builder.constant(-0.175f),builder.constant( 0.175f),builder.constant(1.25f));
-		EntityRenderer.Model.Point bodyHLL=new EntityRenderer.Model.Point(builder.constant( 0.175f),builder.constant(-0.175f),builder.constant(0.325f));
-		EntityRenderer.Model.Point bodyHLH=new EntityRenderer.Model.Point(builder.constant( 0.175f),builder.constant(-0.175f),builder.constant(1.25f));
-		EntityRenderer.Model.Point bodyHHL=new EntityRenderer.Model.Point(builder.constant( 0.175f),builder.constant( 0.175f),builder.constant(0.325f));
-		EntityRenderer.Model.Point bodyHHH=new EntityRenderer.Model.Point(builder.constant( 0.175f),builder.constant( 0.175f),builder.constant(1.25f));
+		EntityRenderer.Model.Point bodyLLL=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant(-0.2f),builder.constant(0.325f));
+		EntityRenderer.Model.Point bodyLLH=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant(-0.2f),builder.constant(1.25f));
+		EntityRenderer.Model.Point bodyLHL=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant( 0.2f),builder.constant(0.325f));
+		EntityRenderer.Model.Point bodyLHH=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant( 0.2f),builder.constant(1.25f));
+		EntityRenderer.Model.Point bodyHLL=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant(-0.2f),builder.constant(0.325f));
+		EntityRenderer.Model.Point bodyHLH=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant(-0.2f),builder.constant(1.25f));
+		EntityRenderer.Model.Point bodyHHL=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant( 0.2f),builder.constant(0.325f));
+		EntityRenderer.Model.Point bodyHHH=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant( 0.2f),builder.constant(1.25f));
 		rectangles[0]=new EntityRenderer.Model.Rectangle(bodyLLH,bodyHLH,bodyHHH,bodyLHH, 0,16,0,16);
 		rectangles[1]=new EntityRenderer.Model.Rectangle(bodyLLL,bodyHLL,bodyHLH,bodyLLH,16,16,0,16);
 		rectangles[2]=new EntityRenderer.Model.Rectangle(bodyHLL,bodyHHL,bodyHHH,bodyHLH,32,16,0,16);
-		rectangles[3]=new EntityRenderer.Model.Rectangle(bodyHHL,bodyLHL,bodyLHH,bodyHHH,48,16,0,16);
-		rectangles[4]=new EntityRenderer.Model.Rectangle(bodyLHL,bodyLLL,bodyLLH,bodyLHH,64,16,0,16);
+		rectangles[3]=new EntityRenderer.Model.Rectangle(bodyHHL,bodyLHL,bodyLHH,bodyHHH,64,16,0,16);
+		rectangles[4]=new EntityRenderer.Model.Rectangle(bodyLHL,bodyLLL,bodyLLH,bodyLHH,48,16,0,16);
 		rectangles[5]=new EntityRenderer.Model.Rectangle(bodyHLL,bodyLLL,bodyLHL,bodyHHL,80,16,0,16);
 		
 		EntityRenderer.ExprBuilder.Expr danglingTheta=builder.mul(builder.constant(0.2f),builder.cos(builder.mul(builder.mul(t,builder.constant(13.33f)),builder.add(builder.abs(speedx), builder.abs(speedy)))));
 		EntityRenderer.ExprBuilder.Expr zbot=builder.sub(builder.constant(0.375f),builder.mul(builder.constant(0.375f),builder.cos(danglingTheta)));
 		for(int xoff=-1;xoff<2;xoff+=2)for(int yoff=-1;yoff<2;yoff+=2)
 		{
-			EntityRenderer.ExprBuilder.Expr xmin=builder.add(builder.constant(0.175f*xoff-0.125f),builder.mul(builder.constant(0.325f*xoff*yoff),builder.sin(danglingTheta)));
-			EntityRenderer.ExprBuilder.Expr xmax=builder.add(builder.constant(0.175f*xoff+0.125f),builder.mul(builder.constant(0.325f*xoff*yoff),builder.sin(danglingTheta)));
-			EntityRenderer.ExprBuilder.Expr xumin=builder.constant(0.175f*xoff-0.125f);
-			EntityRenderer.ExprBuilder.Expr xumax=builder.constant(0.175f*xoff+0.125f);
+			EntityRenderer.ExprBuilder.Expr xmin=builder.add(builder.constant(0.2f*xoff-0.125f),builder.mul(builder.constant(0.325f*xoff*yoff),builder.sin(danglingTheta)));
+			EntityRenderer.ExprBuilder.Expr xmax=builder.add(builder.constant(0.2f*xoff+0.125f),builder.mul(builder.constant(0.325f*xoff*yoff),builder.sin(danglingTheta)));
+			EntityRenderer.ExprBuilder.Expr xumin=builder.constant(0.2f*xoff-0.125f);
+			EntityRenderer.ExprBuilder.Expr xumax=builder.constant(0.2f*xoff+0.125f);
 			EntityRenderer.ExprBuilder.Expr ymin=builder.constant(0.175f*yoff-0.125f);
 			EntityRenderer.ExprBuilder.Expr ymax=builder.constant(0.175f*yoff+0.125f);
 			EntityRenderer.Model.Point legLLL=new EntityRenderer.Model.Point(xmin,ymin,zbot);
