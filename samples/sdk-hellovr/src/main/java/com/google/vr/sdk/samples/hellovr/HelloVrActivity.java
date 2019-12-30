@@ -85,7 +85,7 @@ public class HelloVrActivity extends GvrActivity {
     Bitmap overlay;
     private boolean leapHandUpMode=false;
     
-    private final CreeperAgent[]creepers=new CreeperAgent[1000];
+    private final Creeper[]creepers=new Creeper[2];
 
     private MediaPlayer mp;
 
@@ -164,8 +164,7 @@ public class HelloVrActivity extends GvrActivity {
 				Log.w("texture loader",String.format("%d bytes expected, %d read",length,res));
 		}catch(IOException e){throw new RuntimeException("IOException",e);}
 		creeperRenderer=CreeperAgent.init(locationSupplier,creepers.length,texture);
-		for(int i=0;i<creepers.length;i++)creepers[i]=new CreeperAgent();
-		
+
 		texture=null;
 		try{
             AssetFileDescriptor tex=getAssets().openFd("wall.png");
@@ -198,13 +197,13 @@ public class HelloVrActivity extends GvrActivity {
         }catch(IOException e){throw new RuntimeException(e);}
         new SceneModifier().start();
 
-        player=new Player(0.25f,0.25f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
-		creepers[0].setIllumination(1);creepers[0].show();
-		creepers[0].setLocAndSpeed(10.5f,41.5f,3,0.1f,0, 0, (float)Math.PI);
-		creepers[1].setIllumination(1);creepers[1].show();
-		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,-0.1f, 0.1f, 0);
-
-        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;updateItemBar();updateMainOverlay();},()->{leapHandUpMode=false;updateItemBar();updateMainOverlay();});
+        player=new Player(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,6}, headTransformProvider, blockRenderer, handRenderer, scene);
+//		creepers[0].setIllumination(1);creepers[0].show();
+//		creepers[0].setLocAndSpeed(10.5f,41.5f,3,0.1f,0, 0, (float)Math.PI);
+//		creepers[1].setIllumination(1);creepers[1].show();
+//		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,-0.1f, 0.1f, 0);
+        for(int i=0;i<creepers.length;i++)creepers[i]=new Creeper(0.3f,0.3f,1.5f,0.2f,new float[]{10,41,4.4f},scene);
+        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
     }
 
     @Override
@@ -469,6 +468,9 @@ public class HelloVrActivity extends GvrActivity {
                 //Log.i("hhh1", "x: "+player.center_pos[0]+", y: "+player.center_pos[1]+", z: "+player.center_pos[2]);
                 sleep_(20);
                 player.update_pos();
+                for(Creeper creeper:creepers){
+                    creeper.update_pos();
+                }
                 // Regular update call to GVR audio engine.
                 gvrAudioEngine.update();
 
