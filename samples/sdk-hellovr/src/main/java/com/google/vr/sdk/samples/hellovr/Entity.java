@@ -14,6 +14,7 @@ abstract public class Entity {
     public float[] speed;
     protected Scene scene;   //场景三维数组
     private float g=0.0098f;
+    protected boolean collide_wall=false;
 
     public Entity(float box_x_half,float box_y_half,float box_z_half_down,float box_z_half_up, float[] center_pos, Scene scene){
         this.box_x_half=box_x_half;
@@ -31,23 +32,26 @@ abstract public class Entity {
         center_pos[0]+=speed[0];
         center_pos[1]+=speed[1];
         center_pos[2]+=speed[2];
-        speed[0]=0;
-        speed[1]=0;
     }
 
     //更新物体速度（如碰撞情况等）：
     private void update_speed(){
         set_next_action();
         //处理x和y方向的碰撞：
+        collide_wall=false;
         if(collide_x()==1 && speed[0]>0){
             speed[0]=0;
+            collide_wall=true;
         }else if(collide_x()==-1 && speed[0]<0){
             speed[0]=0;
+            collide_wall=true;
         }
         if(collide_y()==1 && speed[1]>0){
             speed[1]=0;
+            collide_wall=true;
         }else if(collide_y()==-1 && speed[1]<0){
             speed[1]=0;
+            collide_wall=true;
         }
         //处理z方向的碰撞，需要考虑重力：
         if(collide_z()==1 && speed[2]>0){
