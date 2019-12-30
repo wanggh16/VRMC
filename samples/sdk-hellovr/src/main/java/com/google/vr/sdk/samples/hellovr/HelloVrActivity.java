@@ -82,6 +82,7 @@ public class HelloVrActivity extends GvrActivity {
     LeapReceiver leapReceiver;
     EntityRenderer creeperRenderer;
     Bitmap overlay;
+    private boolean leapHandUpMode=false;
     
     private final CreeperAgent[]creepers=new CreeperAgent[1000];
 
@@ -202,7 +203,7 @@ public class HelloVrActivity extends GvrActivity {
 		creepers[1].setIllumination(1);creepers[1].show();
 		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,-0.1f, 0.1f);
 
-        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
+        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;},()->{leapHandUpMode=false;});
     }
 
     @Override
@@ -237,6 +238,17 @@ public class HelloVrActivity extends GvrActivity {
     }
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(leapHandUpMode)
+        {
+            if(keyCode==KeyEvent.KEYCODE_A)
+                keyCode=KeyEvent.KEYCODE_1;
+            if(keyCode==KeyEvent.KEYCODE_D)
+                keyCode=KeyEvent.KEYCODE_2;
+            if(keyCode==KeyEvent.KEYCODE_W)
+                keyCode=KeyEvent.KEYCODE_3;
+            if(keyCode==KeyEvent.KEYCODE_S)
+                keyCode=KeyEvent.KEYCODE_4;
+        }
         Log.i("keycode", String.valueOf(keyCode));
         switch (keyCode){
             case KeyEvent.KEYCODE_X:
@@ -279,6 +291,24 @@ public class HelloVrActivity extends GvrActivity {
                 currentBlockIndex+=1;
                 if(currentBlockIndex>=AVAILABLE_BLOCKS_LIST.size())currentBlockIndex=0;
                 currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                updateItemBar();
+                break;
+            case KeyEvent.KEYCODE_3:    //选择物品栏中最左边的方块
+                for(int i=0;i<4;i++)
+                {
+                    currentBlockIndex-=1;
+                    if(currentBlockIndex<0)currentBlockIndex=AVAILABLE_BLOCKS_LIST.size()-1;
+                    currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                }
+                updateItemBar();
+                break;
+            case KeyEvent.KEYCODE_4:    //选择物品栏中最右边的方块
+                for(int i=0;i<4;i++)
+                {
+                    currentBlockIndex+=1;
+                    if(currentBlockIndex>=AVAILABLE_BLOCKS_LIST.size())currentBlockIndex=0;
+                    currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                }
                 updateItemBar();
                 break;
             default:
