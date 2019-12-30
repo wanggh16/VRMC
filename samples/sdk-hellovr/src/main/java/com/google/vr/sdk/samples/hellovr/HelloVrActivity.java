@@ -314,35 +314,39 @@ public class HelloVrActivity extends GvrActivity {
         CrossPoint cross = player.get_facing_block();
         if (cross != null) {
             boolean placesuccess = false;
+            int placedblocki = cross.nextblocki;
+            int placedblockj = cross.nextblockj;
+            int placedblockk = cross.nextblockk;
             if (cross.type == 0 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk)) {
-                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)currentBlockId);
+                placedblockj++;
                 placesuccess = true;
             }
             else if (cross.type == 1 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk)) {
-                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)currentBlockId);
+                placedblockj--;
                 placesuccess = true;
             }
             else if (cross.type == 2 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1)) {
-                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)currentBlockId);
+                placedblockk++;
                 placesuccess = true;
             }
             else if (cross.type == 3 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1)) {
-                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)currentBlockId);
+                placedblockk--;
                 placesuccess = true;
             }
             else if (cross.type == 4 && player.canPlaceBlock(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk)) {
-                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)currentBlockId);
+                placedblocki--;
                 placesuccess = true;
             }
             else if (cross.type == 5 && player.canPlaceBlock(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk)) {
-                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)currentBlockId);
+                placedblocki++;
                 placesuccess = true;
             }
 
             if (placesuccess) {
+                player.set_block(placedblocki, placedblockj, placedblockk, (char)currentBlockId);
                 if (currentBlockId == 2 || currentBlockId == 5 || currentBlockId == 8 || currentBlockId == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
                 else digId = gvrAudioEngine.createSoundObject(DIG_STONE_SOUND_FILE);
-                Scene.Point block_center_pos_render = scene.transform_array_to_render(cross.nextblocki, cross.nextblockj, cross.nextblockk);
+                Scene.Point block_center_pos_render = scene.transform_array_to_render(placedblocki, placedblockj, placedblockk);
                 Scene.Point block_pos_gvr = scene.transform_render_to_sdk(block_center_pos_render.x, block_center_pos_render.y, block_center_pos_render.z);
                 Scene.Point player_pos_gvr = scene.transform_render_to_sdk(player.center_pos[0], player.center_pos[1], player.center_pos[2]);
                 headTransformProvider.getQuaternion(headRotation, 0);
@@ -361,9 +365,9 @@ public class HelloVrActivity extends GvrActivity {
                     gvrAudioEngine.setSoundObjectPosition(explodeId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                     gvrAudioEngine.setSoundVolume(explodeId, 1.0f);
                     gvrAudioEngine.playSound(fuseId, false);
-                    explodei = cross.nextblocki;
-                    explodej = cross.nextblockj;
-                    explodek = cross.nextblockk;
+                    explodei = placedblocki;
+                    explodej = placedblockj;
+                    explodek = placedblockk;
                 }
                 else blockCD = 5;
             }
