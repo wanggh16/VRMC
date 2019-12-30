@@ -19,6 +19,7 @@ package com.google.vr.sdk.samples.hellovr;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;                //detect screen press and release
@@ -82,6 +83,7 @@ public class HelloVrActivity extends GvrActivity {
     LeapReceiver leapReceiver;
     EntityRenderer creeperRenderer;
     Bitmap overlay;
+    private boolean leapHandUpMode=false;
     
     private final CreeperAgent[]creepers=new CreeperAgent[1000];
 
@@ -180,7 +182,7 @@ public class HelloVrActivity extends GvrActivity {
                     .andThen(headTransformProvider=new HeadTransformProvider())
                     .andThen(handRenderer=new HandRenderer())
                     .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png")),0.5f,0.7f,0.7f))//;
-                    .andThen(optionalBlockRender=new OverlayRenderer(overlay=BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")),0.499f,0.7f,0.7f));
+                    .andThen(optionalBlockRender=new OverlayRenderer(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")),0.499f,0.7f,0.7f));
             gvrView.setRenderer(renderer);
         }catch(IOException ignored){}
         gvrView.setTransitionViewEnabled(true);
@@ -202,7 +204,7 @@ public class HelloVrActivity extends GvrActivity {
 		creepers[1].setIllumination(1);creepers[1].show();
 		creepers[1].setLocAndSpeed(10.5f,41.5f,3,0.1f,-0.1f, 0.1f, 0);
 
-        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{},()->{});
+        leapReceiver=new LeapReceiver(this::deleteBlock,this::setBlock,()->{leapHandUpMode=true;updateItemBar();updateMainOverlay();},()->{leapHandUpMode=false;updateItemBar();updateMainOverlay();});
     }
 
     @Override
@@ -237,6 +239,17 @@ public class HelloVrActivity extends GvrActivity {
     }
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(leapHandUpMode)
+        {
+            if(keyCode==KeyEvent.KEYCODE_A)
+                keyCode=KeyEvent.KEYCODE_1;
+            if(keyCode==KeyEvent.KEYCODE_D)
+                keyCode=KeyEvent.KEYCODE_2;
+            if(keyCode==KeyEvent.KEYCODE_W)
+                keyCode=KeyEvent.KEYCODE_3;
+            if(keyCode==KeyEvent.KEYCODE_S)
+                keyCode=KeyEvent.KEYCODE_4;
+        }
         Log.i("keycode", String.valueOf(keyCode));
         switch (keyCode){
             case KeyEvent.KEYCODE_X:
@@ -268,6 +281,8 @@ public class HelloVrActivity extends GvrActivity {
                 break;
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.10f;
+                //Scene.Point block_curr = scene.transform_render_to_array(player.center_pos[0],player.center_pos[1],player.center_pos[2] - 1);
+                //player.explode((int)block_curr.x, (int)block_curr.y, (int)block_curr.z, 3);
                 break;
             case KeyEvent.KEYCODE_1:    //选择物品栏中左边的方块
                 currentBlockIndex-=1;
@@ -279,6 +294,24 @@ public class HelloVrActivity extends GvrActivity {
                 currentBlockIndex+=1;
                 if(currentBlockIndex>=AVAILABLE_BLOCKS_LIST.size())currentBlockIndex=0;
                 currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                updateItemBar();
+                break;
+            case KeyEvent.KEYCODE_3:    //选择物品栏中最左边的方块
+                for(int i=0;i<4;i++)
+                {
+                    currentBlockIndex-=1;
+                    if(currentBlockIndex<0)currentBlockIndex=AVAILABLE_BLOCKS_LIST.size()-1;
+                    currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                }
+                updateItemBar();
+                break;
+            case KeyEvent.KEYCODE_4:    //选择物品栏中最右边的方块
+                for(int i=0;i<4;i++)
+                {
+                    currentBlockIndex+=1;
+                    if(currentBlockIndex>=AVAILABLE_BLOCKS_LIST.size())currentBlockIndex=0;
+                    currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                }
                 updateItemBar();
                 break;
             default:
@@ -328,7 +361,6 @@ public class HelloVrActivity extends GvrActivity {
                 gvrAudioEngine.setSoundObjectPosition(digId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
-
             }
         }
     }
@@ -361,9 +393,23 @@ public class HelloVrActivity extends GvrActivity {
     private void updateItemBar(){
         try{
             Log.i("itembar",""+currentBlockId);
-            optionalBlockRender.changeContent(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")));
+            if(leapHandUpMode)
+				optionalBlockRender.changeContent(moveUp(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png"))));
+            else
+            	optionalBlockRender.changeContent(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")));
         }catch(IOException ignored){}
     }
+    private void updateMainOverlay(){
+    	if(leapHandUpMode)
+    		overlayRenderer.changeContent(moveUp(overlay));
+    	else
+	    	overlayRenderer.changeContent(overlay);
+	}
+	private static Bitmap moveUp(Bitmap bitmap)
+	{Log.w("move pic","up");
+	
+    	return Bitmap.createBitmap(bitmap,0,bitmap.getHeight()/2,bitmap.getWidth(),bitmap.getHeight()/2,null,false);
+	}
     
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
