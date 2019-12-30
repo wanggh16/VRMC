@@ -109,7 +109,7 @@ final class CreeperAgent
 	{
 		float timeElapsed=System.nanoTime()-startTime;
 		float x=this.x+speed*(float)Math.cos(theta)*timeElapsed;
-		float y=this.x+speed*(float)Math.sin(theta)*timeElapsed;
+		float y=this.y+speed*(float)Math.sin(theta)*timeElapsed;
 		return new Location(x,y,z);
 	}
 	public void show(){renderer.enableEntity(instanceID);}
@@ -117,10 +117,10 @@ final class CreeperAgent
 	public void setLocAndSpeed(float x,float y,float z,float speed,float theta)
 	{
 		speed*=1e-9;
-		float headTheta=this.theta-theta;
+		float headTheta=(float)Math.random()*0.5f-0.25f;//this.theta-theta;
 		this.x=x;this.y=y;this.z=z;this.speed=speed;this.theta=theta;
 		renderer.setEntityAttrib(instanceID,new float[]{
-				System.nanoTime(),
+				startTime=System.nanoTime(),
 				this.x,
 				this.y,
 				this.z,
