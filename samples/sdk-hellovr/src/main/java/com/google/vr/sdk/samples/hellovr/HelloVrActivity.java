@@ -70,12 +70,15 @@ public class HelloVrActivity extends GvrActivity {
 	}
 
     private Scene scene;
-    private Player player;        //玩家
+    private Player player;          //玩家
+    private int currentBlockIndex=0;
+    private int currentBlockId=1;
 
     BlockRenderer blockRenderer;
     HeadTransformProvider headTransformProvider;
     HandRenderer handRenderer;
     OverlayRenderer overlayRenderer;
+    OverlayRenderer optionalBlockRender;
     LeapReceiver leapReceiver;
     EntityRenderer creeperRenderer;
     Bitmap overlay;
@@ -176,7 +179,8 @@ public class HelloVrActivity extends GvrActivity {
                     .andThen(creeperRenderer)
                     .andThen(headTransformProvider=new HeadTransformProvider())
                     .andThen(handRenderer=new HandRenderer())
-                    .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png")),0.5f,0.7f,0.7f));
+                    .andThen(overlayRenderer=new OverlayRenderer(overlay= BitmapFactory.decodeStream(getAssets().open("overlay.png")),0.5f,0.7f,0.7f))//;
+                    .andThen(optionalBlockRender=new OverlayRenderer(overlay=BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")),0.499f,0.7f,0.7f));
             gvrView.setRenderer(renderer);
         }catch(IOException ignored){}
         gvrView.setTransitionViewEnabled(true);
@@ -265,44 +269,55 @@ public class HelloVrActivity extends GvrActivity {
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.10f;
                 break;
+            case KeyEvent.KEYCODE_1:    //选择物品栏中左边的方块
+                currentBlockIndex-=1;
+                if(currentBlockIndex<0)currentBlockIndex=AVAILABLE_BLOCKS_LIST.size()-1;
+                currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                updateItemBar();
+                break;
+            case KeyEvent.KEYCODE_2:    //选择物品栏中右边的方块
+                currentBlockIndex+=1;
+                if(currentBlockIndex>=AVAILABLE_BLOCKS_LIST.size())currentBlockIndex=0;
+                currentBlockId=AVAILABLE_BLOCKS_LIST.get(currentBlockIndex);
+                updateItemBar();
+                break;
             default:
         }
         return true;
     }
-    
+
 	private Iterator<Integer>nextBlockType=AVAILABLE_BLOCKS_LIST.iterator();
-    private char blockInHand=(char)(int)nextBlockType.next();
     private void setBlock() {
         CrossPoint cross = player.get_facing_block();
         if (cross != null) {
             boolean placesuccess = false;
             if (cross.type == 0 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk)) {
-                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, blockInHand);
+                player.set_block(cross.nextblocki, cross.nextblockj + 1, cross.nextblockk, (char)currentBlockId);
                 placesuccess = true;
             }
             else if (cross.type == 1 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk)) {
-                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, blockInHand);
+                player.set_block(cross.nextblocki, cross.nextblockj - 1, cross.nextblockk, (char)currentBlockId);
                 placesuccess = true;
             }
             else if (cross.type == 2 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1)) {
-                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, blockInHand);
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk + 1, (char)currentBlockId);
                 placesuccess = true;
             }
             else if (cross.type == 3 && player.canPlaceBlock(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1)) {
-                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, blockInHand);
+                player.set_block(cross.nextblocki, cross.nextblockj, cross.nextblockk - 1, (char)currentBlockId);
                 placesuccess = true;
             }
             else if (cross.type == 4 && player.canPlaceBlock(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk)) {
-                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, blockInHand);
+                player.set_block(cross.nextblocki - 1, cross.nextblockj, cross.nextblockk, (char)currentBlockId);
                 placesuccess = true;
             }
             else if (cross.type == 5 && player.canPlaceBlock(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk)) {
-                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, blockInHand);
+                player.set_block(cross.nextblocki + 1, cross.nextblockj, cross.nextblockk, (char)currentBlockId);
                 placesuccess = true;
             }
 
             if (placesuccess) {
-                if (blockInHand == 2 || blockInHand == 5 || blockInHand == 8 || blockInHand == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
+                if (currentBlockId == 2 || currentBlockId == 5 || currentBlockId == 8 || currentBlockId == 28) digId = gvrAudioEngine.createSoundObject(DIG_GRASS_SOUND_FILE);
                 else digId = gvrAudioEngine.createSoundObject(DIG_STONE_SOUND_FILE);
                 Scene.Point block_center_pos_render = scene.transform_array_to_render(cross.nextblocki, cross.nextblockj, cross.nextblockk);
                 Scene.Point block_pos_gvr = scene.transform_render_to_sdk(block_center_pos_render.x, block_center_pos_render.y, block_center_pos_render.z);
@@ -314,13 +329,10 @@ public class HelloVrActivity extends GvrActivity {
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
 
-                blockInHand = (char) (int) nextBlockType.next();
-                if (!nextBlockType.hasNext())
-                    nextBlockType = AVAILABLE_BLOCKS_LIST.iterator();
             }
         }
     }
-    
+
     private void deleteBlock() {
         CrossPoint cross = player.get_facing_block();
         if (cross != null){
@@ -338,8 +350,19 @@ public class HelloVrActivity extends GvrActivity {
                 gvrAudioEngine.setSoundObjectPosition(digId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
+                //挖去某一种方块时更新物品栏
+                currentBlockId=deletedblock;
+                currentBlockIndex=AVAILABLE_BLOCKS_LIST.indexOf((int)deletedblock);
+                updateItemBar();
             }
         }
+    }
+
+    private void updateItemBar(){
+        try{
+            Log.i("itembar",""+currentBlockId);
+            optionalBlockRender.changeContent(BitmapFactory.decodeStream(getAssets().open(currentBlockId+".png")));
+        }catch(IOException ignored){}
     }
     
     @Override
