@@ -22,19 +22,19 @@ final class CreeperAgent
 		EntityRenderer.ExprBuilder.Expr theta=builder.nextParam();
 		EntityRenderer.ExprBuilder.Expr speed=builder.nextParam();
 		EntityRenderer.ExprBuilder.Expr headTheta=builder.nextParam();
-		EntityRenderer.Model.Rectangle[]rectangles=new EntityRenderer.Model.Rectangle[12];
+		EntityRenderer.Model.Rectangle[]rectangles=new EntityRenderer.Model.Rectangle[36];
 		EntityRenderer.ExprBuilder.Expr t=builder.sub(tabs,t0);
 		EntityRenderer.ExprBuilder.Expr x=builder.add(x0,builder.mul(builder.mul(t,speed),builder.cos(theta)));
 		EntityRenderer.ExprBuilder.Expr y=builder.add(y0,builder.mul(builder.mul(t,speed),builder.sin(theta)));
 		
-		EntityRenderer.Model.Point bodyLLL=new EntityRenderer.Model.Point(builder.constant(-0.4f),builder.constant(-0.4f),builder.constant(0.6f));
-		EntityRenderer.Model.Point bodyLLH=new EntityRenderer.Model.Point(builder.constant(-0.4f),builder.constant(-0.4f),builder.constant(1.2f));
-		EntityRenderer.Model.Point bodyLHL=new EntityRenderer.Model.Point(builder.constant(-0.4f),builder.constant( 0.4f),builder.constant(0.6f));
-		EntityRenderer.Model.Point bodyLHH=new EntityRenderer.Model.Point(builder.constant(-0.4f),builder.constant( 0.4f),builder.constant(1.2f));
-		EntityRenderer.Model.Point bodyHLL=new EntityRenderer.Model.Point(builder.constant( 0.4f),builder.constant(-0.4f),builder.constant(0.6f));
-		EntityRenderer.Model.Point bodyHLH=new EntityRenderer.Model.Point(builder.constant( 0.4f),builder.constant(-0.4f),builder.constant(1.2f));
-		EntityRenderer.Model.Point bodyHHL=new EntityRenderer.Model.Point(builder.constant( 0.4f),builder.constant( 0.4f),builder.constant(0.6f));
-		EntityRenderer.Model.Point bodyHHH=new EntityRenderer.Model.Point(builder.constant( 0.4f),builder.constant( 0.4f),builder.constant(1.2f));
+		EntityRenderer.Model.Point bodyLLL=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant(-0.25f),builder.constant(0.375f));
+		EntityRenderer.Model.Point bodyLLH=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant(-0.25f),builder.constant(1.125f));
+		EntityRenderer.Model.Point bodyLHL=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant( 0.25f),builder.constant(0.375f));
+		EntityRenderer.Model.Point bodyLHH=new EntityRenderer.Model.Point(builder.constant(-0.125f),builder.constant( 0.25f),builder.constant(1.125f));
+		EntityRenderer.Model.Point bodyHLL=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant(-0.25f),builder.constant(0.375f));
+		EntityRenderer.Model.Point bodyHLH=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant(-0.25f),builder.constant(1.125f));
+		EntityRenderer.Model.Point bodyHHL=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant( 0.25f),builder.constant(0.375f));
+		EntityRenderer.Model.Point bodyHHH=new EntityRenderer.Model.Point(builder.constant( 0.125f),builder.constant( 0.25f),builder.constant(1.125f));
 		rectangles[0]=new EntityRenderer.Model.Rectangle(bodyLLH,bodyHLH,bodyHHH,bodyLHH, 0,16,0,16);
 		rectangles[1]=new EntityRenderer.Model.Rectangle(bodyLLL,bodyHLL,bodyHLH,bodyLLH,16,16,0,16);
 		rectangles[2]=new EntityRenderer.Model.Rectangle(bodyHLL,bodyHHL,bodyHHH,bodyHLH,32,16,0,16);
@@ -42,16 +42,43 @@ final class CreeperAgent
 		rectangles[4]=new EntityRenderer.Model.Rectangle(bodyLHL,bodyLLL,bodyLLH,bodyLHH,64,16,0,16);
 		rectangles[5]=new EntityRenderer.Model.Rectangle(bodyHLL,bodyLLL,bodyLHL,bodyHHL,80,16,0,16);
 		
+		EntityRenderer.ExprBuilder.Expr danglingTheta=builder.mul(builder.constant(0.5f),builder.cos(builder.mul(builder.mul(t,builder.constant(8f)),speed)));
+		EntityRenderer.ExprBuilder.Expr zbot=builder.sub(builder.constant(0.375f),builder.mul(builder.constant(0.375f),builder.cos(danglingTheta)));
+		EntityRenderer.ExprBuilder.Expr xbot=builder.mul(builder.constant(0.375f),builder.sin(danglingTheta));
+		for(int xoff=-1;xoff<2;xoff+=2)for(int yoff=-1;yoff<2;yoff+=2)
+		{
+			EntityRenderer.ExprBuilder.Expr xbotactual=builder.add(builder.constant(0.25f*xoff),xbot);
+			EntityRenderer.ExprBuilder.Expr xmin=builder.add(xbotactual,builder.constant(-0.125f));
+			EntityRenderer.ExprBuilder.Expr xmax=builder.add(xbotactual,builder.constant( 0.125f));
+			EntityRenderer.ExprBuilder.Expr ymin=builder.constant(0.25f*yoff-0.125f);
+			EntityRenderer.ExprBuilder.Expr ymax=builder.constant(0.25f*yoff+0.125f);
+			EntityRenderer.Model.Point legLLL=new EntityRenderer.Model.Point(xmin,ymin,zbot);
+			EntityRenderer.Model.Point legLLH=new EntityRenderer.Model.Point(xmin,ymin,builder.constant(0.375f));
+			EntityRenderer.Model.Point legLHL=new EntityRenderer.Model.Point(xmin,ymax,zbot);
+			EntityRenderer.Model.Point legLHH=new EntityRenderer.Model.Point(xmin,ymax,builder.constant(0.375f));
+			EntityRenderer.Model.Point legHLL=new EntityRenderer.Model.Point(xmax,ymin,zbot);
+			EntityRenderer.Model.Point legHLH=new EntityRenderer.Model.Point(xmax,ymin,builder.constant(0.375f));
+			EntityRenderer.Model.Point legHHL=new EntityRenderer.Model.Point(xmax,ymax,zbot);
+			EntityRenderer.Model.Point legHHH=new EntityRenderer.Model.Point(xmax,ymax,builder.constant(0.375f));
+			int rectoff=12+((xoff+1)+(yoff+1)/2)*6;
+			rectangles[rectoff+0]=new EntityRenderer.Model.Rectangle(legLLH,legHLH,legHHH,legLHH, 0,16,32,16);
+			rectangles[rectoff+1]=new EntityRenderer.Model.Rectangle(legLLL,legHLL,legHLH,legLLH,16,16,32,16);
+			rectangles[rectoff+2]=new EntityRenderer.Model.Rectangle(legHLL,legHHL,legHHH,legHLH,32,16,32,16);
+			rectangles[rectoff+3]=new EntityRenderer.Model.Rectangle(legHHL,legLHL,legLHH,legHHH,48,16,32,16);
+			rectangles[rectoff+4]=new EntityRenderer.Model.Rectangle(legLHL,legLLL,legLLH,legLHH,64,16,32,16);
+			rectangles[rectoff+5]=new EntityRenderer.Model.Rectangle(legHLL,legLLL,legLHL,legHHL,80,16,32,16);
+		}
+		
 		EntityRenderer.ExprBuilder.Expr cosHeadTheta=builder.cos(headTheta),sinHeadTheta=builder.sin(headTheta);
-		EntityRenderer.ExprBuilder.Expr n04=builder.constant(-0.2f),p04=builder.constant(0.2f);
-		EntityRenderer.Model.Point headLLL=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.2f));
-		EntityRenderer.Model.Point headLLH=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.6f));
-		EntityRenderer.Model.Point headLHL=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.2f));
-		EntityRenderer.Model.Point headLHH=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.6f));
-		EntityRenderer.Model.Point headHLL=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.2f));
-		EntityRenderer.Model.Point headHLH=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.6f));
-		EntityRenderer.Model.Point headHHL=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.2f));
-		EntityRenderer.Model.Point headHHH=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.6f));
+		EntityRenderer.ExprBuilder.Expr n04=builder.constant(-0.25f),p04=builder.constant(0.25f);
+		EntityRenderer.Model.Point headLLL=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.125f));
+		EntityRenderer.Model.Point headLLH=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.625f));
+		EntityRenderer.Model.Point headLHL=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.125f));
+		EntityRenderer.Model.Point headLHH=new EntityRenderer.Model.Point(builder.sub(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.constant(1.625f));
+		EntityRenderer.Model.Point headHLL=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.125f));
+		EntityRenderer.Model.Point headHLH=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(n04,sinHeadTheta)),builder.add(builder.mul(n04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.625f));
+		EntityRenderer.Model.Point headHHL=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.125f));
+		EntityRenderer.Model.Point headHHH=new EntityRenderer.Model.Point(builder.sub(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.add(builder.mul(p04,cosHeadTheta),builder.mul(p04,sinHeadTheta)),builder.constant(1.625f));
 		rectangles[ 6]=new EntityRenderer.Model.Rectangle(headLLH,headHLH,headHHH,headLHH, 0,16,16,16);
 		rectangles[ 7]=new EntityRenderer.Model.Rectangle(headLLL,headHLL,headHLH,headLLH,16,16,16,16);
 		rectangles[ 8]=new EntityRenderer.Model.Rectangle(headHLL,headHHL,headHHH,headHLH,32,16,16,16);
