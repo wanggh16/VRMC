@@ -90,20 +90,23 @@ public class HelloVrActivity extends GvrActivity {
     private MediaPlayer mp;
 
     private int blockCD = 0;
-    private float[] headRotation;
+    private int explodei = 0, explodej = 0, explodek = 0;
     private float speed_2_old = 0;
+    private float[] headRotation;
     private GvrAudioEngine gvrAudioEngine;
     private volatile int walkGrassId = GvrAudioEngine.INVALID_ID;
     private volatile int walkStoneId = GvrAudioEngine.INVALID_ID;
     private volatile int dropId = GvrAudioEngine.INVALID_ID;
     private volatile int digId = GvrAudioEngine.INVALID_ID;
-    private volatile int creeperId = GvrAudioEngine.INVALID_ID;
+    private volatile int fuseId = GvrAudioEngine.INVALID_ID;
+    private volatile int explodeId = GvrAudioEngine.INVALID_ID;
     private static final String WALK_GRASS_SOUND_FILE = "audio/grass2.ogg";
     private static final String WALK_STONE_SOUND_FILE = "audio/stone6.ogg";
     private static final String DROP_SOUND_FILE = "audio/gravel1.ogg";
     private static final String DIG_GRASS_SOUND_FILE = "audio/diggrass2.ogg";
     private static final String DIG_STONE_SOUND_FILE = "audio/digstone4.ogg";
-    private static final String CREEPER_SOUND_FILE = "audio/creeper.ogg";
+    private static final String FUSE_SOUND_FILE = "audio/fuse.ogg";
+    private static final String EXPLODE_SOUND_FILE = "audio/explode2.ogg";
     /**
      * Sets the view to our GvrView and initializes the transformation matrices we will use
      * to render our scene.
@@ -128,23 +131,21 @@ public class HelloVrActivity extends GvrActivity {
 
                         gvrAudioEngine.preloadSoundFile(WALK_GRASS_SOUND_FILE);
                         walkGrassId = gvrAudioEngine.createSoundObject(WALK_GRASS_SOUND_FILE);
-                        gvrAudioEngine.setSoundObjectPosition(walkGrassId, 0, -1.5f, 0);
                         gvrAudioEngine.setSoundVolume(walkGrassId, 0.5f);
                         gvrAudioEngine.playSound(walkGrassId, true /* looped playback */);
                         gvrAudioEngine.pauseSound(walkGrassId);
 
                         gvrAudioEngine.preloadSoundFile(WALK_STONE_SOUND_FILE);
                         walkStoneId = gvrAudioEngine.createSoundObject(WALK_STONE_SOUND_FILE);
-                        gvrAudioEngine.setSoundObjectPosition(walkStoneId, 0, -1.5f, 0);
                         gvrAudioEngine.setSoundVolume(walkStoneId, 1.0f);
                         gvrAudioEngine.playSound(walkStoneId, true /* looped playback */);
                         gvrAudioEngine.pauseSound(walkStoneId);
 
-                        gvrAudioEngine.preloadSoundFile(CREEPER_SOUND_FILE);
-                        creeperId = gvrAudioEngine.createSoundObject(CREEPER_SOUND_FILE);
                         gvrAudioEngine.preloadSoundFile(DROP_SOUND_FILE);
                         gvrAudioEngine.preloadSoundFile(DIG_GRASS_SOUND_FILE);
                         gvrAudioEngine.preloadSoundFile(DIG_STONE_SOUND_FILE);
+                        gvrAudioEngine.preloadSoundFile(FUSE_SOUND_FILE);
+                        gvrAudioEngine.preloadSoundFile(EXPLODE_SOUND_FILE);
                     }
                 })
                 .start();
@@ -263,16 +264,10 @@ public class HelloVrActivity extends GvrActivity {
                 player.set_move_toward(Player.Direction.RIGHTWARD);
                 break;
             case KeyEvent.KEYCODE_Z:
-                if (blockCD == 0){
-                    deleteBlock();
-                    blockCD = 5;
-                }
+                if (blockCD == 0) deleteBlock();
                 break;
             case KeyEvent.KEYCODE_C:
-                if (blockCD == 0){
-                    setBlock();
-                    blockCD = 5;
-                }
+                if (blockCD == 0) setBlock();
                 break;
             case KeyEvent.KEYCODE_Q:
                 player.MOVE_SPEED = 0.10f;
@@ -356,6 +351,21 @@ public class HelloVrActivity extends GvrActivity {
                 gvrAudioEngine.setSoundObjectPosition(digId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
                 gvrAudioEngine.setSoundVolume(digId, Math.min(1.0f, (float)(1/cross.dist)));
                 gvrAudioEngine.playSound(digId, false);
+
+                if (currentBlockId == 8){
+                    blockCD = 300;
+                    fuseId = gvrAudioEngine.createSoundObject(FUSE_SOUND_FILE);
+                    explodeId = gvrAudioEngine.createSoundObject(EXPLODE_SOUND_FILE);
+                    gvrAudioEngine.setSoundObjectPosition(fuseId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
+                    gvrAudioEngine.setSoundVolume(fuseId, 1.0f);
+                    gvrAudioEngine.setSoundObjectPosition(explodeId, (float)block_pos_gvr.x, (float)block_pos_gvr.y, (float)block_pos_gvr.z);
+                    gvrAudioEngine.setSoundVolume(explodeId, 1.0f);
+                    gvrAudioEngine.playSound(fuseId, false);
+                    explodei = cross.nextblocki;
+                    explodej = cross.nextblockj;
+                    explodek = cross.nextblockk;
+                }
+                else blockCD = 5;
             }
         }
     }
@@ -381,6 +391,8 @@ public class HelloVrActivity extends GvrActivity {
                 currentBlockId=deletedblock;
                 currentBlockIndex=AVAILABLE_BLOCKS_LIST.indexOf((int)deletedblock);
                 updateItemBar();
+                //冷却时间
+                blockCD = 5;
             }
         }
     }
@@ -471,6 +483,10 @@ public class HelloVrActivity extends GvrActivity {
                 gvrAudioEngine.update();
 
                 if (blockCD > 0) blockCD--;
+                if (blockCD == 100){
+                    gvrAudioEngine.playSound(explodeId, false);
+                    player.explode(explodei, explodej, explodek, 3);
+                }
                 //check play walk sound or not
                 int bottom = player.getBottomBlock();
                 if (player.isMoving()){
